@@ -105,6 +105,18 @@ class Loader(object):
         """
         extract an ngmix.MultiBandObsList for the given region, filling noise
         in the regions not assigned to the requested objects
+
+        Parameters
+        ----------
+        ranges: tuple
+            (minrow, maxrow, mincol, maxcol)
+        wout: tuple of arrays
+            (wrows, wcols) indices for areas not assigned to
+            the objects of interest
+
+        Returns
+        -------
+        mbobs: ngmix.MultiBandObsList
         """
 
         minrow, maxrow, mincol, maxcol = ranges
@@ -133,6 +145,20 @@ class Loader(object):
         return mbobs
 
     def _get_image_data(self, band, ranges):
+        """
+        get the image and wieght for the specified box
+
+        Parameters
+        ----------
+        band: int
+            band to load
+        ranges: tuple
+            (minrow, maxrow, mincol, maxcol)
+
+        Returns
+        -------
+        image, weight
+        """
         minrow, maxrow, mincol, maxcol = ranges
 
         image_hdu = self.image_hdu_list[band]
@@ -151,7 +177,10 @@ class Loader(object):
 
     def _get_jacobian(self, band, midrow, midcol):
         """
-        convert wcs jacobian to ngmix jacobian
+        get the ngmix jacobian at the specified location
+
+        "center" of the jacobian will be 0, 0 which is most useful when the
+        objects can be anywhere in the image
         """
 
         wcs = self.wcs_list[band]
@@ -174,6 +203,16 @@ class Loader(object):
     def _get_image_box(self, ind):
         """
         get the region containing all the objects
+
+        Parameters
+        ----------
+        ind: array
+            Indices of the objects of interest
+
+        Returns
+        -------
+        ranges: tuple
+            (minrow, maxrow, mincol, maxcol)
         """
         seg = self.seg
         cat = self.cat
@@ -200,6 +239,19 @@ class Loader(object):
         """
         get indices of pixels not included in the
         seg maps associated with the input numbers
+
+        Parameters
+        ----------
+        numbers: array
+            Array of sextractor number ids
+        seg: array
+            The sextractor seg map
+
+        Returns
+        -------
+        wout: tuple of arrays
+            Indices of pixels not assigned to the specified objects, as
+            returned by the np.where function
         """
 
         for i, number in enumerate(numbers):
