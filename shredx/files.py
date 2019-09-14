@@ -8,7 +8,7 @@ class Loader(object):
     """
     Interface to load data from files
     """
-    def __init__(self,
+    def __init__(self, *,
                  image_files,
                  psf_files,
                  seg_file,
@@ -39,8 +39,9 @@ class Loader(object):
             Buffer to pad around each image extracted around
             a set of objects
         coord_offset: int
-            sextractor position offsets, default 1.  Note
-            if you used sep they will be zero offset
+            sextractor position offsets, default 1 which is the sextractor
+            convention.  Note if you used sep for object extraction, the offset
+            is zero
         rng: np.random.RandomState
             Random number generator
         """
