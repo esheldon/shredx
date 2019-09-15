@@ -96,7 +96,7 @@ def _write_simulated_files(tmpdir, seed):
     for band, obslist in enumerate(mbobs):
         obs = obslist[0]
 
-        image_file = os.path.join(tmpdir, 'image-%d.fits')
+        image_file = os.path.join(tmpdir, 'image-%d.fits' % band)
 
         hdr = _get_wcs_header()
         with fitsio.FITS(image_file, 'rw') as fits:
@@ -109,8 +109,8 @@ def _write_simulated_files(tmpdir, seed):
         psfs.append(psf)
 
     cat, seg = _run_sep_on_mbobs(mbobs)
-    cat_file = os.path.join(tmpdir, 'cat-%d.fits')
-    seg_file = os.path.join(tmpdir, 'seg-%d.fits')
+    cat_file = os.path.join(tmpdir, 'cat.fits')
+    seg_file = os.path.join(tmpdir, 'seg.fits')
 
     fitsio.write(cat_file, cat)
     fitsio.write(seg_file, seg)
@@ -123,6 +123,9 @@ def test_loader_smoke(seed):
     """
     test that the loader doesn't crash
     """
+
+    shredx.setup_logging('debug')
+
     with TemporaryDirectory() as tmpdir:
         image_files, psfs, seg_file, cat_file = \
             _write_simulated_files(tmpdir, seed)
