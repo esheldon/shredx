@@ -12,3 +12,4 @@ Run the shredder image deblender on images processed by Source Extractor
 - psfex
 - fofx (for friends of friends group finding)
 - sxdes (optional for tests)
+- sep (used by sxdes)
