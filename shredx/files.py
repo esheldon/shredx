@@ -1,7 +1,10 @@
+import logging
 import numpy as np
 import fitsio
+import esutil as eu
 import ngmix
-import psfex
+
+logger = logging.getLogger(__name__)
 
 
 class Loader(object):
@@ -144,6 +147,39 @@ class Loader(object):
             mbobs.append(obslist)
 
         return mbobs
+
+    def _get_psf_obs(self, band, midrow, midcol):
+        """
+        get the image and wieght for the specified box
+
+        Parameters
+        ----------
+        band: int
+            band to load
+        ranges: tuple
+            (minrow, maxrow, mincol, maxcol)
+
+        Returns
+        -------
+        image, weight
+        """
+
+        psf = self.psf_list[band]
+
+        image = psf.get_rec(midrow, midcol)
+        cen = psf.get_center()
+
+        weight = image*0 + 1.0/0.001**2
+
+        jacob = self._get_jacobian(band, midrow, midcol)
+
+        jacob.set_cen(row=cen[0], col=cen[1])
+
+        return ngmix.Observation(
+            image,
+            weight=weight,
+            jacobian=jacob,
+        )
 
     def _get_image_data(self, band, ranges):
         """
@@ -297,22 +333,39 @@ class Loader(object):
         """
         load image and weight hdus
         """
+
         self.image_hdu_list = []
         self.weight_hdu_list = []
+        self.wcs_list = []
+
         for fname in image_files:
             f = fitsio.FITS(fname)
+
             image_hdu = f[self._image_ext]
             weight_hdu = f[self._weight_ext]
+
             self.image_hdu_list.append(image_hdu)
             self.weight_hdu_list.append(weight_hdu)
+
+            header = image_hdu.read_header()
+            wcs = eu.wcsutil.WCS(header)
+            self.wcs_list.append(wcs)
 
     def _load_psfs(self, psf_files):
         """
         load the psfs
         """
+        import psfex
+
         self.psf_list = []
         for psf_file in psf_files:
-            p = psfex.PSFEx(psf_file)
+            if isinstance(psf_file, str):
+                p = psfex.PSFEx(psf_file)
+            else:
+                logger.info('got non-string psf input, assuming '
+                            'are psfs with correct interface')
+                p = psf_file
+
             self.psf_list.append(p)
 
 
