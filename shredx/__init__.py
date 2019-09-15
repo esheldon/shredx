@@ -1,2 +1,2 @@
-from . import files
-from .files import Loader
+from . import loader
+from .loader import Loader
