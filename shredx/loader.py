@@ -306,6 +306,7 @@ class Loader(object):
         load the catalog and make sure it is ordered by number
         """
 
+        logger.info('loading cat file %s' % cat_file)
         cat = fitsio.read(cat_file, lower=True)
 
         req = ['number', 'x', 'y', 'xmin', 'xmax', 'ymin', 'ymax']
@@ -327,6 +328,7 @@ class Loader(object):
         """
         load the seg map into memory
         """
+        logger.info('loading seg file %s' % seg_file)
         self.seg = fitsio.read(seg_file)
 
     def _load_hdus(self, image_files):
@@ -339,6 +341,7 @@ class Loader(object):
         self.wcs_list = []
 
         for fname in image_files:
+            logger.info('loading image file %s' % fname)
             f = fitsio.FITS(fname)
 
             image_hdu = f[self._image_ext]
@@ -358,12 +361,14 @@ class Loader(object):
         import psfex
 
         self.psf_list = []
-        for psf_file in psf_files:
+        for i, psf_file in enumerate(psf_files):
             if isinstance(psf_file, str):
+                logger.info('loading psfex file %s' % psf_file)
                 p = psfex.PSFEx(psf_file)
             else:
-                logger.info('got non-string psf input, assuming '
-                            'are psfs with correct interface')
+                if i == 0:
+                    logger.info('got non-string psf input, assuming '
+                                'are psfs with correct interface')
                 p = psf_file
 
             self.psf_list.append(p)
