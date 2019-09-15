@@ -11,6 +11,7 @@ TODO
 
 import os
 import numpy as np
+import pytest
 import fitsio
 import shredder
 import shredx
@@ -117,8 +118,11 @@ def _write_simulated_files(tmpdir, seed):
     return image_files, psfs, seg_file, cat_file
 
 
+@pytest.mark.parametrize('seed', [6419, 491])
 def test_loader_smoke(seed):
-
+    """
+    test that the loader doesn't crash
+    """
     with TemporaryDirectory() as tmpdir:
         image_files, psfs, seg_file, cat_file = \
             _write_simulated_files(tmpdir, seed)
