@@ -1,7 +1,6 @@
 import logging
 import numpy as np
 import pytest
-import fofx
 import shredx
 from tempfile import TemporaryDirectory
 
@@ -20,13 +19,12 @@ def test_loader_smoke(seed, width=1000, show=False):
     with TemporaryDirectory() as tmpdir:
 
         loader = shredx.sim.get_loader(tmpdir, rng=rng)
-
-        fofs = fofx.get_fofs(loader.seg)
-        cat = fofx.add_fofs_to_cat(loader.cat, fofs)
+        loader.find_fofs()
 
         if show:
-            loader.view(fofs=cat, show=True, width=width, rng=rng)
+            loader.view(show=True, width=width, rng=rng)
 
+        cat = loader.cat
         fof_ids = np.unique(cat['fof_id'])
 
         for fof_id in fof_ids:
@@ -68,20 +66,19 @@ def test_loader(show=False, width=1000):
     with TemporaryDirectory() as tmpdir:
 
         loader = shredx.sim.get_loader(tmpdir, rng=rng)
-
-        fofs = fofx.get_fofs(loader.seg)
-        cat = fofx.add_fofs_to_cat(loader.cat, fofs)
+        loader.find_fofs()
 
         if show:
-            loader.view(fofs=cat, show=True, width=width, rng=rng)
+            loader.view(show=True, width=width, rng=rng)
 
-        assert np.unique(fofs['fof_id']).size == true_nfofs
+        cat = loader.cat
+        assert np.unique(cat['fof_id']).size == true_nfofs
 
-        fof_ids = np.unique(fofs['fof_id'])
+        fof_ids = np.unique(cat['fof_id'])
 
         for i, fof_id in enumerate(fof_ids):
             logger.info('processing fof: %d' % fof_id)
-            w, = np.where(fofs['fof_id'] == fof_id)
+            w, = np.where(cat['fof_id'] == fof_id)
             numbers = 1+w
 
             assert tuple(w) == true_fof_indices[i]

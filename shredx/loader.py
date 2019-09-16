@@ -28,7 +28,8 @@ class Loader(object):
         image_files: string or list
             image file path or list of paths.
         psf_files: string or list
-            psf file path or list of paths.
+            psf file path or list of paths.  For psfs you can
+            also send a list of psf objects
         seg_file: str
             Path to seg map file
         cat_file: str
@@ -70,11 +71,27 @@ class Loader(object):
 
         self._load_psfs(psf_files)
         self._load_seg(seg_file)
-        self._load_cat(cat_file)
         self._load_hdus(image_files)
+        self._load_cat(cat_file)
+
+    def find_fofs(self):
+        """
+        find the fof groups and set the fof ids in the catalog
+        """
+        import fofx
+
+        fofs = fofx.get_fofs(self.seg)
+        self.cat = fofx.add_fofs_to_cat(self.cat, fofs)
+
+    def add_fofs(self, fofs):
+        """
+        add fof information to the catalog
+        """
+
+        import fofx
+        self.cat = fofx.add_fofs_to_cat(self.cat, fofs)
 
     def view(self,
-             fofs=None,
              scale=2,
              show=False,
              width=1000,
@@ -99,6 +116,11 @@ class Loader(object):
         imlist = []
         wtlist = []
 
+        if 'fof_id' in self.cat.dtype.names:
+            do_fofs = True
+        else:
+            do_fofs = False
+
         for im, wt in zip(self.image_hdu_list, self.weight_hdu_list):
 
             if not isinstance(im, np.ndarray):
@@ -108,7 +130,7 @@ class Loader(object):
             imlist.append(im)
             wtlist.append(wt)
 
-        if fofs is None:
+        if not do_fofs:
             implt = shredder.vis.view_rgb(
                 imlist,
                 wtlist,
@@ -126,14 +148,14 @@ class Loader(object):
             implt = vis.plot_image_and_fofs(
                 imlist,
                 wtlist,
-                fofs,
+                self.cat,
                 scale=scale,
                 minsize=minsize,
                 **kw
             )
             segplt = vis.plot_seg_and_fofs(
                 seg,
-                fofs,
+                self.cat,
                 minsize=minsize,
                 rng=rng,
                 **kw
@@ -147,7 +169,42 @@ class Loader(object):
 
         return tab
 
-    def get_mbobs(self, numbers):
+    def get_fof_mbobs(self, fof_id):
+        """
+        get the mbobs for the requested fof group.  The fof information
+        must be present in the catalog, either in the input catalog
+        or by running find_fofs()
+
+        Parameters
+        ----------
+        fof_id: int
+            id of the FoF group
+
+        Returns
+        -------
+        mbobs: ngmix.MultiBandObsList
+            observation containing the group
+        seg: ngmix.MultiBandObsList
+            seg map corresponding to the region in the returned
+            images
+        cat: array with fields
+            Subset of the catalog containing the group, with positions
+            adjusted for the new image size
+        """
+
+        cat = self.cat
+
+        if 'fof_id' not in cat.dtype.names:
+            raise ValueError('no fof_id in catalog, run find_fofs')
+
+        w, = np.where(cat['fof_id'] == fof_id)
+        if w.size == 0:
+            raise ValueError('fof group %d not found' % fof_id)
+
+        numbers = cat['number'][w]
+        return self.get_mbobs(numbers)
+
+    def get_mbobs(self, numbers=None, indices=None):
         """
         Get an ngmix.MultiBandObsList for the region
         encompasing the input object list
@@ -156,15 +213,38 @@ class Loader(object):
         to those objects
 
         The jacobian from the center of the region is used
+
+        Parameters
+        ----------
+        numbers: array of int
+            The 1-offset number values to match
+
+        indices: array of int
+            The 0-offset index values
+
+        Returns
+        -------
+        mbobs: ngmix.MultiBandObsList
+            observation containing the group
+        seg: ngmix.MultiBandObsList
+            seg map corresponding to the region in the returned
+            images
+        cat: array with fields
+            Subset of the catalog containing the group, with positions
+            adjusted for the new image size
         """
 
-        numbers = np.array(numbers, ndmin=1, copy=False)
-        ind = numbers - 1
+        if numbers is None and indices is None:
+            raise ValueError('send indices= or numbers=')
+
+        if numbers is not None:
+            numbers = np.array(numbers, ndmin=1, copy=False)
+            indices = numbers - 1
 
         seg = self.seg
         cat = self.cat
 
-        ranges = self._get_image_box(ind)
+        ranges = self._get_image_box(indices)
         minrow, maxrow, mincol, maxcol = ranges
 
         new_seg = seg[
@@ -172,7 +252,7 @@ class Loader(object):
             mincol:maxcol,
         ].copy()
 
-        new_cat = cat[ind].copy()
+        new_cat = cat[indices].copy()
         new_cat['y'] -= minrow
         new_cat['x'] -= mincol
 
