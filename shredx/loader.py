@@ -3,6 +3,7 @@ import numpy as np
 import fitsio
 import esutil as eu
 import ngmix
+from . import vis
 
 logger = logging.getLogger(__name__)
 
@@ -72,32 +73,79 @@ class Loader(object):
         self._load_cat(cat_file)
         self._load_hdus(image_files)
 
-    def view(self, scale=2, show=False, **kw):
+    def view(self,
+             fofs=None,
+             scale=2,
+             show=False,
+             width=1000,
+             minsize=2,
+             rng=None,
+             **kw):
         """
         make a plot of the data
         """
         import shredder
-        import fofx
         import biggles
+        import fofx
+
+        if rng is None:
+            rng = np.random.RandomState()
+
+        seg = self.seg
+        rat = seg.shape[1]/(2*seg.shape[0])
+
+        tab = biggles.Table(1, 2, aspect_ratio=rat)
 
         imlist = []
         wtlist = []
 
         for im, wt in zip(self.image_hdu_list, self.weight_hdu_list):
+
             if not isinstance(im, np.ndarray):
                 im = im[:, :]
                 wt = wt[:, :]
+
             imlist.append(im)
             wtlist.append(wt)
 
-        plt = shredder.vis.view_rgb(
-            imlist,
-            wtlist,
-            scale=scale,
-            show=show,
-            **kw
-        )
-        return plt
+        if fofs is None:
+            implt = shredder.vis.view_rgb(
+                imlist,
+                wtlist,
+                scale=scale,
+                **kw
+            )
+            segplt = fofx.vis.plot_seg(
+                seg,
+                rng=rng,
+                **kw
+            )
+
+        else:
+
+            implt = vis.plot_image_and_fofs(
+                imlist,
+                wtlist,
+                fofs,
+                scale=scale,
+                minsize=minsize,
+                **kw
+            )
+            segplt = vis.plot_seg_and_fofs(
+                seg,
+                fofs,
+                minsize=minsize,
+                rng=rng,
+                **kw
+            )
+
+        tab[0, 0] = implt
+        tab[0, 1] = segplt
+
+        if show:
+            tab.show(width=width, height=int(rat*width))
+
+        return tab
 
     def get_mbobs(self, numbers):
         """
