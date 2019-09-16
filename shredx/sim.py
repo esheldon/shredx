@@ -2,6 +2,7 @@ import os
 import numpy as np
 import fitsio
 import shredder
+from .detect import run_sep_on_mbobs
 
 
 def get_simulated_files(tmpdir, config=None, rng=None):
@@ -47,7 +48,7 @@ def get_simulated_files(tmpdir, config=None, rng=None):
         psf = PSFImageWrapper(obs.psf.image)
         psfs.append(psf)
 
-    cat, seg = _run_sep_on_mbobs(mbobs)
+    cat, seg = run_sep_on_mbobs(mbobs)
     cat_file = os.path.join(tmpdir, 'cat.fits')
     seg_file = os.path.join(tmpdir, 'seg.fits')
 
@@ -78,20 +79,6 @@ def _get_wcs_header():
         "CRVAL2  =      -54.55415863979 / World coordinate on this axis",
     ]
     return fitsio.FITSHDR(cards)
-
-
-def _run_sep_on_mbobs(mbobs):
-    """
-    run sep and get a cat and seg map
-    """
-    import shredder
-    import sxdes
-
-    coadd_obs = shredder.coadding.make_coadd_obs(mbobs)
-
-    noise = np.sqrt(1.0/coadd_obs.weight[0, 0])
-    cat, seg = sxdes.run_sep(coadd_obs.image, noise)
-    return cat, seg
 
 
 class PSFImageWrapper(object):
