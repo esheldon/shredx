@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize('seed', [6419, 491])
-def test_loader_smoke(seed):
+def test_loader_smoke(seed, show=False):
     """
     test that the loader doesn't crash
     """
@@ -34,9 +34,12 @@ def test_loader_smoke(seed):
 
         tmbobs, tseg, tcat = loader.get_mbobs(numbers)  # noqa
 
+        if show:
+            loader.view(show=True)
+
 
 @pytest.mark.parametrize('seed', [2510, 21064])
-def test_loader(seed, show=False):
+def test_loader_with_fofs(seed, show=False):
     """
     test we can run the fof finder and extract the group
     """
