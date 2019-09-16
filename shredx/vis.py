@@ -1,6 +1,51 @@
 import numpy as np
 
 
+def plot_mbobs_and_fofs(mbobs,
+                        fofs,
+                        scale=2,
+                        minsize=2, width=1000,
+                        rng=None, show=False, **kw):
+    """
+    plot the fof groups over the rgb image
+
+    Parameters
+    ----------
+    mbobs: ngmix.MultiBandObsList
+        multi band observation list
+    fofs: array with fields
+        An array with fof_id, x, y fields.  Note the output of get_fofs() does
+        not include x, y so you must add those yourself
+    width: int, optional
+        Image width in pixels
+    rng: np.random.RandomState
+        An optional random number generator
+    show: bool
+        if True the plot will be shown
+    **kw:
+        Other keywords for the plotter
+
+    Returns
+    -------
+    the plot object
+    """
+
+    imlist = [olist[0].image for olist in mbobs]
+    wtlist = [olist[0].weight for olist in mbobs]
+
+    return plot_image_and_fofs(
+        imlist,
+        wtlist,
+        fofs,
+        scale=scale,
+        minsize=minsize,
+        width=width,
+        rng=rng,
+        show=show,
+        **kw
+    )
+
+
 def plot_image_and_fofs(imlist, wtlist, fofs,
                         scale=2,
                         minsize=2, width=1000,
