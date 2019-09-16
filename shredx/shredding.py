@@ -54,9 +54,10 @@ def shred_fofs(*,
     hd = eu.stat.histogram(cat['fof_id'], more=True)
 
     rev = hd['rev']
+    num = hd['hist'].size
 
     reslist = []
-    for i in range(hd['hist'].size):
+    for i in range(num):
 
         if rev[i] != rev[i+1]:
             w = rev[rev[i]:rev[i+1]]
@@ -85,6 +86,10 @@ def shred_fofs(*,
                 reslist.append(s)
             else:
                 reslist.append(s.get_result())
+
+        if show and i < num-1:
+            if input('hit a key (q to quit): ') == 'q':
+                return
 
     return reslist
 
