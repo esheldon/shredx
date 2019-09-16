@@ -72,6 +72,27 @@ class Loader(object):
         self._load_cat(cat_file)
         self._load_hdus(image_files)
 
+    def view(self, scale=2, show=False):
+        """
+        make a plot of the data
+        """
+        import shredder
+        import fofx
+        import biggles
+
+        imlist = []
+        wtlist = []
+
+        for im, wt in zip(self.image_hdu_list, self.weight_hdu_list):
+            if not isinstance(im, np.ndarray):
+                im = im[:, :]
+                wt = wt[:, :]
+            imlist.append(im)
+            wtlist.append(wt)
+
+        plt = shredder.vis.view_rgb(imlist, wtlist, scale=scale, show=show)
+        return plt
+
     def get_mbobs(self, numbers):
         """
         Get an ngmix.MultiBandObsList for the region
