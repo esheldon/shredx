@@ -37,7 +37,8 @@ def shred_fofs(*,
     Returns
     -------
     output: list of results
-        A list of result dicts from the shredder
+        A list of result dicts from the shredder, or a list of shredders
+        if get_shredders == True
     """
 
     if fofs is not None:
