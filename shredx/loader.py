@@ -72,7 +72,7 @@ class Loader(object):
         self._load_cat(cat_file)
         self._load_hdus(image_files)
 
-    def view(self, scale=2, show=False):
+    def view(self, scale=2, show=False, **kw):
         """
         make a plot of the data
         """
@@ -90,7 +90,13 @@ class Loader(object):
             imlist.append(im)
             wtlist.append(wt)
 
-        plt = shredder.vis.view_rgb(imlist, wtlist, scale=scale, show=show)
+        plt = shredder.vis.view_rgb(
+            imlist,
+            wtlist,
+            scale=scale,
+            show=show,
+            **kw
+        )
         return plt
 
     def get_mbobs(self, numbers):

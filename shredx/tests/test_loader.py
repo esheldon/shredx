@@ -42,7 +42,6 @@ def test_loader(seed, show=False):
     """
 
     import fofx
-    # import esutil
 
     shredx.setup_logging('debug')
     rng = np.random.RandomState(seed)
@@ -60,11 +59,12 @@ def test_loader(seed, show=False):
             rng=rng,
         )
 
+        if show:
+            loader.view(show=True, title='full image')
+
         fofs = fofx.get_fofs(loader.seg)
 
         fof_ids = np.unique(fofs['fof_id'])
-
-        # esutil.numpy_util.aprint(fofs)
 
         for fof_id in fof_ids:
             logger.info('processing fof: %d' % fof_id)
@@ -76,4 +76,10 @@ def test_loader(seed, show=False):
 
             if show:
                 import shredder
-                shredder.vis.view_mbobs(fof_mbobs, 2, show=True)
+                title = 'FoF %d' % fof_id
+                shredder.vis.view_mbobs(
+                    fof_mbobs,
+                    scale=2,
+                    show=True,
+                    title=title,
+                )
