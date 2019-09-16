@@ -1,7 +1,6 @@
 import logging
 import esutil as eu
 import shredder
-import fofx
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +11,9 @@ def shred_fofs(*,
                model='dev',
                min_fofsize=2,
                rng=None,
+               get_shredders=False,
                show=False,
-               width=1000):
+               **kw):
     """
     Parameters
     ----------
@@ -28,6 +28,11 @@ def shred_fofs(*,
         objects are not processed.
     rng: np.random.RandomState
         Random number generator
+    get_shredders: bool
+        If true return a list of shredders rather than a list of results
+    show: bool
+        If True, show some plots
+    **kw: extra plotting keywords
 
     Returns
     -------
@@ -41,7 +46,7 @@ def shred_fofs(*,
         loader.find_fofs()
 
     if show:
-        loader.view(show=True, width=width, rng=rng)
+        loader.view(show=True, rng=rng, **kw)
 
     cat = loader.cat
 
@@ -55,6 +60,10 @@ def shred_fofs(*,
         if rev[i] != rev[i+1]:
             w = rev[rev[i]:rev[i+1]]
 
+            if w.size < min_fofsize:
+                # TODO save some information for these anyway?
+                continue
+
             numbers = 1+w
 
             fof_id = cat['fof_id'][w[0]]
@@ -62,19 +71,24 @@ def shred_fofs(*,
 
             fof_mbobs, fof_seg, fof_cat = loader.get_mbobs(numbers)
 
-            res = shred(
+            s = shred(
                 mbobs=fof_mbobs,
                 cat=fof_cat,
                 model=model,
                 rng=rng,
+                show=show,
+                **kw
             )
 
-            reslist.append(res)
+            if get_shredders:
+                reslist.append(s)
+            else:
+                reslist.append(s.get_result())
 
     return reslist
 
 
-def shred(*, mbobs, cat, model='dev', rng=None):
+def shred(*, mbobs, cat, model='dev', rng=None, show=False, **kw):
     """
     deblend objects in the input images
 
@@ -92,9 +106,10 @@ def shred(*, mbobs, cat, model='dev', rng=None):
 
     Returns
     -------
-    res: dict
-        Result dict from the shredder
+    shredder: shredder.Shredder
+        The shredder used to deblend
     """
+
     gm_guess = shredder.get_guess(
         cat,
         jacobian=mbobs[0][0].jacobian,
@@ -105,4 +120,7 @@ def shred(*, mbobs, cat, model='dev', rng=None):
     s = shredder.Shredder(mbobs, rng=rng)
     s.shred(gm_guess)
 
-    return s.get_result()
+    if show:
+        s.plot_comparison(show=True, **kw)
+
+    return s

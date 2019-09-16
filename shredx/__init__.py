@@ -1,6 +1,11 @@
 from . import loader
 from .loader import Loader
 
+from . import shredding
+from .shredding import (
+    shred_fofs,
+    shred,
+)
 from . import logging
 from .logging import setup_logging
 
