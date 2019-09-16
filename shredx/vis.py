@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def plot_image_and_fofs(imlist, wtlist, fofs,
                         scale=2,
                         minsize=2, width=1000,
@@ -30,7 +31,6 @@ def plot_image_and_fofs(imlist, wtlist, fofs,
     the plot object
     """
     import shredder
-    import fofx
 
     plt = shredder.vis.view_rgb(
         imlist,
@@ -100,13 +100,12 @@ def add_fofs_to_plot(plt, fofs, rng=None, size=1, minsize=2):
     import esutil as eu
     import biggles
 
-
     hd = eu.stat.histogram(fofs['fof_id'], min=0, more=True)
 
     rev = hd['rev']
 
-    low = 20
-    high = 200
+    low = 0
+    high = 125
 
     if rng is None:
         seed = hd['hist'].size
@@ -118,25 +117,52 @@ def add_fofs_to_plot(plt, fofs, rng=None, size=1, minsize=2):
         if w.size >= minsize:
 
             rgb = rng.uniform(low=low, high=high, size=3).astype('i4')
-            color = rgb_to_hex(tuple(rgb))
-            symbol = _get_random_symbol(rng)
+            rgb = tuple(rgb)
+            rgb2 = (255-rgb[0], 255-rgb[1], 255-rgb[2])
+            color = rgb_to_hex(rgb)
+            color2 = rgb_to_hex(rgb2)
+            colors = (color, color2)
+            # symbol = _get_random_symbol(rng)
+            symbols = _get_random_symbols(rng)
 
-            pts = biggles.Points(
+            """
+            print('colors:', colors)
+            print('symbols:', symbols)
+
+            pts1 = biggles.Points(
                 fofs['x'][w],
                 fofs['y'][w],
-                # type='filled circle',
-                type=symbol,
-                size=size,
+                type=symbols[0],
                 color=color,
+                size=size,
             )
-            plt.add(pts)
+            pts2 = biggles.Points(
+                fofs['x'][w],
+                fofs['y'][w],
+                type=symbols[1],
+                color=color2,
+                size=size,
+            )
+
+            plt.add(pts1, pts2)
+            """
+
+            for color, symbol in zip(colors, symbols):
+                print("'%s' '%s'" % (symbol, color))
+                pts = biggles.Points(
+                    fofs['x'][w],
+                    fofs['y'][w],
+                    type=symbol,
+                    color=color,
+                    size=size,
+                )
+                plt.add(pts)
 
 
 def rgb_to_hex(rgb):
     """
     convert (r, g, b) tuple to a hex string
     """
-    print('rgb:', rgb)
     return '#%02x%02x%02x' % rgb
 
 
@@ -144,6 +170,20 @@ def _get_random_symbol(rng):
     i = rng.randint(0, len(_SYMBOLS)-1)
     return _SYMBOLS[i]
 
+
+def _get_random_symbols(rng):
+    i = rng.randint(0, len(_SYMBOL_PAIRS)-1)
+    return _SYMBOL_PAIRS[i]
+
+
+_SYMBOL_PAIRS = (
+    ('filled circle', 'circle'),
+    ('filled square', 'square'),
+    ('filled triangle', 'triangle'),
+    ('filled octagon', 'octagon'),
+    ('filled diamond', 'diamond'),
+    ('filled inverted triangle', 'inverted triangle'),
+)
 
 _SYMBOLS = [
     "filled circle",

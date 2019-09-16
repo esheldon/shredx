@@ -47,7 +47,7 @@ def test_loader_smoke(seed, width=1000, show=False):
             logger.info('ids: %s numbers: %s' % (str(w), str(numbers)))
             fof_mbobs, fof_seg, fof_cat = loader.get_mbobs(numbers)
 
-            if False and show:
+            if show:
                 import shredder
                 title = 'FoF %d' % fof_id
                 shredder.vis.view_mbobs(
