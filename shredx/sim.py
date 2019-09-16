@@ -2,7 +2,39 @@ import os
 import numpy as np
 import fitsio
 import shredder
+from . import loader
 from .detect import run_sep_on_mbobs
+
+
+def get_loader(tmpdir, config=None, rng=None):
+    """
+    get a loader with simulated data and return paths etc.
+
+    Parameters
+    ----------
+    tmpdir: str
+        The directory in which to write files.  Note the caller is responsible
+        for cleaning up, best is using a context manager such as
+        tempfile.TemporaryDirectory
+    rng: np.random.RandomState
+        Optional rng for the shredder simulation.
+    config: dict
+        Optional configuration parameters for the shredder simulation.
+
+    the psf files returned are actually PSFImageWrapper
+    objects, which the loader will use
+    """
+    image_files, psfs, seg_file, cat_file = \
+        get_simulated_files(tmpdir, rng=rng)
+
+    return loader.Loader(
+        image_files=image_files,
+        psf_files=psfs,
+        seg_file=seg_file,
+        cat_file=cat_file,
+        coord_offset=0,
+        rng=rng,
+    )
 
 
 def get_simulated_files(tmpdir, config=None, rng=None):

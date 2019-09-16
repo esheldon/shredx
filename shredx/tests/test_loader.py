@@ -18,21 +18,11 @@ def test_loader_smoke(seed, width=1000, show=False):
     rng = np.random.RandomState(seed)
 
     with TemporaryDirectory() as tmpdir:
-        image_files, psfs, seg_file, cat_file = \
-            shredx.sim.get_simulated_files(tmpdir, rng=rng)
 
-        loader = shredx.Loader(
-            image_files=image_files,
-            psf_files=psfs,
-            seg_file=seg_file,
-            cat_file=cat_file,
-            coord_offset=0,
-            rng=rng,
-        )
-
+        loader = shredx.sim.get_loader(tmpdir, rng=rng)
 
         fofs = fofx.get_fofs(loader.seg)
-        cat = fofx.add_fofs_to_cat(loader.cat,fofs)
+        cat = fofx.add_fofs_to_cat(loader.cat, fofs)
 
         if show:
             loader.view(fofs=cat, show=True, width=width, rng=rng)
@@ -76,20 +66,11 @@ def test_loader(show=False, width=1000):
     rng = np.random.RandomState(seed)
 
     with TemporaryDirectory() as tmpdir:
-        image_files, psfs, seg_file, cat_file = \
-            shredx.sim.get_simulated_files(tmpdir, rng=rng)
 
-        loader = shredx.Loader(
-            image_files=image_files,
-            psf_files=psfs,
-            seg_file=seg_file,
-            cat_file=cat_file,
-            coord_offset=0,
-            rng=rng,
-        )
+        loader = shredx.sim.get_loader(tmpdir, rng=rng)
 
         fofs = fofx.get_fofs(loader.seg)
-        cat = fofx.add_fofs_to_cat(loader.cat,fofs)
+        cat = fofx.add_fofs_to_cat(loader.cat, fofs)
 
         if show:
             loader.view(fofs=cat, show=True, width=width, rng=rng)
