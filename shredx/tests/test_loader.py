@@ -26,16 +26,17 @@ def test_loader_smoke(seed):
             seg_file=seg_file,
             cat_file=cat_file,
             coord_offset=0,
+            rng=rng,
         )
 
         # or whatever
         numbers = [1, 2, 3]
 
-        mbobs = loader.get_mbobs(numbers)  # noqa
+        tmbobs, tseg, tcat = loader.get_mbobs(numbers)  # noqa
 
 
 @pytest.mark.parametrize('seed', [2510, 21064])
-def test_loader(seed):
+def test_loader(seed, show=False):
     """
     test we can run the fof finder and extract the group
     """
@@ -56,6 +57,7 @@ def test_loader(seed):
             seg_file=seg_file,
             cat_file=cat_file,
             coord_offset=0,
+            rng=rng,
         )
 
         fofs = fofx.get_fofs(loader.seg)
@@ -70,4 +72,8 @@ def test_loader(seed):
             numbers = 1+w
 
             logger.info('ids: %s numbers: %s' % (str(w), str(numbers)))
-            mbobs = loader.get_mbobs(numbers)  # noqa
+            fof_mbobs, fof_seg, fof_cat = loader.get_mbobs(numbers)  # noqa
+
+            if show:
+                import shredder
+                shredder.vis.view_mbobs(fof_mbobs, 2, show=True)

@@ -49,6 +49,9 @@ class Loader(object):
             Random number generator
         """
 
+        if rng is None:
+            rng = np.random.RandomState()
+
         self._image_ext = image_ext
         self._weight_ext = weight_ext
 
@@ -134,6 +137,8 @@ class Loader(object):
             image, weight = self._get_image_data(band, ranges)
             jacob = self._get_jacobian(band, midrow, midcol)
             psf_obs = self._get_psf_obs(band, midrow, midcol)
+
+            _replace_with_noise(image, weight, wout, self._rng)
 
             obs = ngmix.Observation(
                 image,
@@ -372,6 +377,18 @@ class Loader(object):
                 p = psf_file
 
             self.psf_list.append(p)
+
+
+def _replace_with_noise(image, weight, indices, rng):
+    """
+    replace pixels with noise
+    """
+    noise = np.sqrt(1.0/weight.max())
+    noise_image = rng.normal(
+        scale=noise,
+        size=image.shape
+    )
+    image[indices] = noise_image[indices]
 
 
 def _get_file_list(image_files):
