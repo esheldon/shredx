@@ -25,7 +25,7 @@ def get_loader(tmpdir, config=None, rng=None):
     objects, which the loader will use
     """
     image_files, psfs, seg_file, cat_file = \
-        get_simulated_files(tmpdir, rng=rng)
+        get_simulated_files(tmpdir, config=config, rng=rng)
 
     return loader.Loader(
         image_files=image_files,
@@ -56,7 +56,7 @@ def get_simulated_files(tmpdir, config=None, rng=None):
     objects, which the loader will use
     """
 
-    sim = shredder.sim.Sim(rng=rng)
+    sim = shredder.sim.Sim(config=config, rng=rng)
 
     mbobs = sim()
 

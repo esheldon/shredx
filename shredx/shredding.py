@@ -9,6 +9,7 @@ def shred_fofs(*,
                loader,
                fofs=None,
                model='dev',
+               fill_zero_weight=False,
                min_fofsize=2,
                rng=None,
                get_shredders=False,
@@ -79,6 +80,7 @@ def shred_fofs(*,
                 model=model,
                 rng=rng,
                 show=show,
+                fill_zero_weight=fill_zero_weight,
                 **kw
             )
 
@@ -94,7 +96,12 @@ def shred_fofs(*,
     return reslist
 
 
-def shred(*, mbobs, cat, model='dev', rng=None, show=False, **kw):
+def shred(*, mbobs, cat,
+          model='dev',
+          rng=None,
+          show=False,
+          fill_zero_weight=False,
+          **kw):
     """
     deblend objects in the input images
 
@@ -123,7 +130,11 @@ def shred(*, mbobs, cat, model='dev', rng=None, show=False, **kw):
         rng=rng,
     )
 
-    s = shredder.Shredder(mbobs, rng=rng)
+    s = shredder.Shredder(
+        mbobs,
+        fill_zero_weight=fill_zero_weight,
+        rng=rng,
+    )
     s.shred(gm_guess)
 
     if show:

@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import pytest
 import shredx
+import shredder
 from tempfile import TemporaryDirectory
 
 logger = logging.getLogger(__name__)
@@ -70,3 +71,29 @@ def test_shredding(show=False, **kw):
             chi2per = chi2/dof
 
             assert chi2per < 1.05
+
+
+@pytest.mark.parametrize('seed', [995, 7317])
+def test_shredding_bad_columns(seed, show=False, **kw):
+    """
+    test with bad columns
+    """
+
+
+    shredx.setup_logging('debug')
+
+    logger.info('seed: %d' % seed)
+    rng = np.random.RandomState(seed)
+
+    with TemporaryDirectory() as tmpdir:
+
+        config = shredder.sim.get_default_config()
+        config['image']['bad_columns'] = True
+
+        loader = shredx.sim.get_loader(tmpdir, config=config, rng=rng)
+        shredx.shred_fofs(
+            loader=loader,
+            show=show,
+            fill_zero_weight=True,
+            **kw
+        )

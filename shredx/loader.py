@@ -21,6 +21,7 @@ class Loader(object):
                  weight_ext='wgt',
                  pixbuf=10,
                  coord_offset=1,
+                 fill_zero_weight=False,
                  rng=None):
         """
         Parameters
@@ -53,6 +54,11 @@ class Loader(object):
 
         if rng is None:
             rng = np.random.RandomState()
+
+        if fill_zero_weight:
+            self._ignore_zero_weight = False
+        else:
+            self._ignore_zero_weight = True
 
         self._image_ext = image_ext
         self._weight_ext = weight_ext
@@ -300,6 +306,7 @@ class Loader(object):
                 weight=weight,
                 jacobian=jacob,
                 psf=psf_obs,
+                ignore_zero_weight=self._ignore_zero_weight,
             )
 
             obslist = ngmix.ObsList()
