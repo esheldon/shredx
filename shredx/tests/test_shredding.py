@@ -79,7 +79,6 @@ def test_shredding_bad_columns(seed, show=False, **kw):
     test with bad columns
     """
 
-
     shredx.setup_logging('debug')
 
     logger.info('seed: %d' % seed)
