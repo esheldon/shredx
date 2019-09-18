@@ -34,6 +34,8 @@ def test_loader_smoke(seed, width=1000, show=False):
             logger.info('ids: %s' % str(ind))
             fof_mbobs, fof_seg, fof_cat = loader.get_mbobs(ind)
 
+            fof_mbobs, fof_seg, fof_cat = loader.get_fof_mbobs(fof_id)
+
             if show:
                 import shredder
                 title = 'FoF %d' % fof_id
