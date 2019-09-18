@@ -203,14 +203,13 @@ class Loader(object):
         if 'fof_id' not in cat.dtype.names:
             raise ValueError('no fof_id in catalog, run find_fofs')
 
-        w, = np.where(cat['fof_id'] == fof_id)
-        if w.size == 0:
+        indices, = np.where(cat['fof_id'] == fof_id)
+        if indices.size == 0:
             raise ValueError('fof group %d not found' % fof_id)
 
-        numbers = cat['number'][w]
-        return self.get_mbobs(numbers)
+        return self.get_mbobs(indices)
 
-    def get_mbobs(self, numbers=None, indices=None):
+    def get_mbobs(self, indices):
         """
         Get an ngmix.MultiBandObsList for the region
         encompasing the input object list
@@ -222,9 +221,6 @@ class Loader(object):
 
         Parameters
         ----------
-        numbers: array of int
-            The 1-offset number values to match
-
         indices: array of int
             The 0-offset index values
 
@@ -240,15 +236,10 @@ class Loader(object):
             adjusted for the new image size
         """
 
-        if numbers is None and indices is None:
-            raise ValueError('send indices= or numbers=')
-
-        if numbers is not None:
-            numbers = np.array(numbers, ndmin=1, copy=False)
-            indices = numbers - 1
-
         seg = self.seg
         cat = self.cat
+
+        numbers = cat['number'][indices]
 
         ranges = self._get_image_box(indices)
         minrow, maxrow, mincol, maxcol = ranges
