@@ -45,7 +45,7 @@ def test_shredding(show=False, **kw):
     with TemporaryDirectory() as tmpdir:
 
         loader = shredx.sim.get_loader(tmpdir, rng=rng)
-        shredders = shredx.shred_fofs(
+        outputs, shredders = shredx.shred_fofs(
             loader=loader,
             show=show,
             get_shredders=True,
@@ -54,6 +54,9 @@ def test_shredding(show=False, **kw):
         )
 
         for s in shredders:
+
+            if s is None:
+                continue
 
             res = s.get_result()
             assert res['flags'] == 0
