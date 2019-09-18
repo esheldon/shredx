@@ -96,3 +96,9 @@ def test_shredding_bad_columns(seed, show=False, **kw):
             fill_zero_weight=True,
             **kw
         )
+
+
+if __name__ == '__main__':
+    seed = 995
+    test_shredding_smoke(seed, show=True)
+    test_shredding_bad_columns(seed, show=True)
