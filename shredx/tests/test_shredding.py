@@ -53,6 +53,8 @@ def test_shredding(show=False, **kw):
             **kw
         )
 
+        assert outputs.size == loader.cat.size
+
         for s in shredders:
 
             if s is None:
