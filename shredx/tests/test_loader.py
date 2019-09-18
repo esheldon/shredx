@@ -29,11 +29,10 @@ def test_loader_smoke(seed, width=1000, show=False):
 
         for fof_id in fof_ids:
             logger.info('processing fof: %d' % fof_id)
-            w, = np.where(cat['fof_id'] == fof_id)
-            numbers = 1+w
+            ind, = np.where(cat['fof_id'] == fof_id)
 
-            logger.info('ids: %s numbers: %s' % (str(w), str(numbers)))
-            fof_mbobs, fof_seg, fof_cat = loader.get_mbobs(numbers)
+            logger.info('ids: %s' % str(ind))
+            fof_mbobs, fof_seg, fof_cat = loader.get_mbobs(ind)
 
             if show:
                 import shredder
@@ -78,13 +77,12 @@ def test_loader(show=False, width=1000):
 
         for i, fof_id in enumerate(fof_ids):
             logger.info('processing fof: %d' % fof_id)
-            w, = np.where(cat['fof_id'] == fof_id)
-            numbers = 1+w
+            ind, = np.where(cat['fof_id'] == fof_id)
 
-            assert tuple(w) == true_fof_indices[i]
+            assert tuple(ind) == true_fof_indices[i]
 
-            logger.info('ids: %s numbers: %s' % (str(w), str(numbers)))
-            fof_mbobs, fof_seg, fof_cat = loader.get_mbobs(numbers)
+            logger.info('ids: %s' % str(ind))
+            fof_mbobs, fof_seg, fof_cat = loader.get_mbobs(ind)
 
             if show:
                 import shredder
