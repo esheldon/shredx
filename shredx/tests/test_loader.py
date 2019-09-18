@@ -86,6 +86,9 @@ def test_loader(show=False, width=1000):
             logger.info('ids: %s' % str(ind))
             fof_mbobs, fof_seg, fof_cat = loader.get_mbobs(ind)
 
+            tfof_mbobs, tfof_seg, tfof_cat = loader.get_fof_mbobs(fof_id)
+            assert fof_cat.size == tfof_cat.size
+
             if show:
                 import shredder
                 title = 'FoF %d' % fof_id
