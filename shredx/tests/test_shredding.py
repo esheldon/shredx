@@ -20,7 +20,9 @@ def test_shredding_smoke(seed, show=False, **kw):
     with TemporaryDirectory() as tmpdir:
 
         loader = shredx.sim.get_loader(tmpdir, rng=rng)
-        shredx.shred_fofs(loader=loader, show=show, **kw)
+        output = shredx.shred_fofs(loader=loader, show=show, rng=rng, **kw)
+
+    return output
 
 
 def test_shredding(show=False, **kw):
@@ -47,6 +49,7 @@ def test_shredding(show=False, **kw):
             loader=loader,
             show=show,
             get_shredders=True,
+            rng=rng,
             **kw
         )
 
@@ -94,6 +97,7 @@ def test_shredding_bad_columns(seed, show=False, **kw):
             loader=loader,
             show=show,
             fill_zero_weight=True,
+            rng=rng,
             **kw
         )
 
@@ -101,4 +105,4 @@ def test_shredding_bad_columns(seed, show=False, **kw):
 if __name__ == '__main__':
     seed = 995
     test_shredding_smoke(seed, show=True)
-    test_shredding_bad_columns(seed, show=True)
+    # test_shredding_bad_columns(seed, show=True)
