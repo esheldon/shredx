@@ -21,7 +21,6 @@ class Loader(object):
                  weight_ext='wgt',
                  pixbuf=10,
                  coord_offset=1,
-                 fill_zero_weight=True,
                  rng=None):
         """
         Parameters
@@ -55,10 +54,10 @@ class Loader(object):
         if rng is None:
             rng = np.random.RandomState()
 
-        if fill_zero_weight:
-            self._ignore_zero_weight = False
-        else:
-            self._ignore_zero_weight = True
+        # we load all pixels into the observation, we will usually fill those
+        # with zero weight using the model
+
+        self._ignore_zero_weight = False
 
         self._image_ext = image_ext
         self._weight_ext = weight_ext
