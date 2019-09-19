@@ -21,7 +21,7 @@ class Loader(object):
                  weight_ext='wgt',
                  pixbuf=10,
                  coord_offset=1,
-                 fill_zero_weight=False,
+                 fill_zero_weight=True,
                  rng=None):
         """
         Parameters
