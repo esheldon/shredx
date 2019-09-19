@@ -75,6 +75,10 @@ def get_simulated_files(tmpdir, config=None, rng=None):
             fits.write(obs.image, extname='sci', header=hdr)
             fits.write(obs.weight, extname='wgt')
 
+            # TODO need a test of mask
+            msk = np.zeros(obs.image.shape, dtype='i2')
+            fits.write(msk, extname='msk')
+
         image_files.append(image_file)
 
         psf = PSFImageWrapper(obs.psf.image)
