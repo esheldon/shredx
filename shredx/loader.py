@@ -67,7 +67,7 @@ class Loader(object):
         self._weight_ext = weight_ext
         self._mask_ext = mask_ext
 
-        self._rng = rng
+        self.rng = rng
         self._pixbuf = pixbuf
         self._coord_offset = coord_offset
         self._zero_weight_badpix = zero_weight_badpix
@@ -295,7 +295,7 @@ class Loader(object):
             jacob = self._get_jacobian(band, midrow, midcol)
             psf_obs = self._get_psf_obs(band, midrow, midcol)
 
-            _replace_with_noise(image, weight, wout, self._rng)
+            _replace_with_noise(image, weight, wout, self.rng)
 
             # zero the weight map for bad pixels.  Note we are doing this after
             # replacing non-member objects pixels with noise, in case the

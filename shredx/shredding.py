@@ -1,6 +1,7 @@
 """
 TODO
     - record error messages
+    - use loader rng if none is sent?
 """
 import time
 import numpy as np
@@ -20,7 +21,7 @@ def shred_fofs(*,
                min_fofsize=2,
                rng=None,
                get_shredders=False,
-               limit=None,
+               fof_range=None,
                show=False,
                show_full=False,
                **kw):
@@ -40,8 +41,9 @@ def shred_fofs(*,
         Random number generator
     get_shredders: bool
         If true return a list of shredders rather than a list of results
-    limit: int, optional
-        Process at most this many objects
+    fof_range: 2-element sequence, optional
+        Only process the requested range of fofs, formatted like a python slice
+        [start, end)
     show: bool
         If True, show some plots for FoF groups
     show_full: bool
@@ -72,10 +74,19 @@ def shred_fofs(*,
     rev = hd['rev']
     nfofs = hd['hist'].size
 
+    if fof_range is not None:
+        assert len(fof_range) == 2
+        assert fof_range[0] >= 0
+        assert fof_range[1] <= nfofs
+        nfofs = fof_range[1] - fof_range[0]
+    else:
+        fof_range = [0, nfofs]
+
     reslist = []
     shredder_list = []
-    nproc = 0
-    for i in range(nfofs):
+
+    for ii in range(nfofs):
+        i = fof_range[0] + ii
 
         if rev[i] != rev[i+1]:
             ind = rev[rev[i]:rev[i+1]]
@@ -94,11 +105,11 @@ def shred_fofs(*,
             else:
 
                 logger.info('-'*70)
-                logger.info('processing %d/%d' % (i+1, nfofs))
+                logger.info('processing %d/%d' % (ii+1, nfofs))
 
                 fof_id = cat['fof_id'][ind[0]]
                 logger.info(
-                    'fof: %d fof_size: %d '
+                    'fof_id: %d fof_size: %d '
                     'ids: %s' % (fof_id, fof_size, str(ind))
                 )
 
@@ -116,9 +127,6 @@ def shred_fofs(*,
                     get_shredder=get_shredders,
                     **kw
                 )
-                nproc += 1
-                if nproc > limit:
-                    break
 
             if get_shredders:
                 output, s = res
@@ -303,7 +311,6 @@ def _make_output(*, cat, res, nband, ngauss_per, time):
                         ipars = output['band_pars'][i, :, band]
                         igm = ngmix.GMix(pars=ipars)
                         output['band_flux'][i, band] = igm.get_flux()
-
 
     return output
 
