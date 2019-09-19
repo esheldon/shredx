@@ -146,7 +146,7 @@ def shred_fofs(*,
     output = eu.numpy_util.combine_arrlist(reslist)
 
     tm = time.time() - tm0
-    print('time:', tm)
+    print('total time:', tm)
     print('time per:', tm/nfofs)
 
     if get_shredders:
