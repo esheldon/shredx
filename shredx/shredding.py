@@ -3,6 +3,7 @@ TODO
     - record the time for the fit
     - record some object stats such as flux and size, but note the size
       will be different in each band
+    - record error messages
 """
 import time
 import numpy as np
@@ -78,7 +79,8 @@ def shred_fofs(*,
         if rev[i] != rev[i+1]:
             ind = rev[rev[i]:rev[i+1]]
 
-            if ind.size < min_fofsize:
+            fof_size = ind.size
+            if fof_size < min_fofsize:
                 fof_cat = cat[ind].copy()
                 res = shred(
                     mbobs=[0]*loader.nband,
@@ -92,10 +94,8 @@ def shred_fofs(*,
 
                 logger.info('-'*70)
                 logger.info('processing %d/%d' % (i+1, nfofs))
-                ttm0 = time.time()
 
                 fof_id = cat['fof_id'][ind[0]]
-                fof_size = ind.size
                 logger.info(
                     'fof: %d fof_size: %d '
                     'ids: %s' % (fof_id, fof_size, str(ind))
@@ -115,13 +115,15 @@ def shred_fofs(*,
                     get_shredder=get_shredders,
                     **kw
                 )
-                logger.info('time: %g' % (time.time()-ttm0))
 
             if get_shredders:
                 output, s = res
                 shredder_list.append(s)
             else:
                 output = res
+
+            if fof_size >= min_fofsize:
+                logger.info('time: %g' % output['time'][0])
 
             reslist.append(output)
 
@@ -291,7 +293,6 @@ def _make_output_struct(nobj, nband, ngauss_per):
         ('fof_id', 'i4'),
         ('fof_size', 'i4'),
         ('flags', 'i4'),
-
         ('coadd_flags', 'i4'),
         ('coadd_numiter', 'i4'),
         ('coadd_sky', 'f4'),
@@ -303,6 +304,8 @@ def _make_output_struct(nobj, nband, ngauss_per):
         ('band_sky', 'f4', nband),
         ('band_psf_pars', 'f8', (6, nband)),
         ('band_pars', 'f8', (6*ngauss_per, nband)),
+
+        ('time', 'f4'),
     ]
 
     st = np.zeros(nobj, dtype=dt)
