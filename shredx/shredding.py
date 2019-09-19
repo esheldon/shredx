@@ -1,7 +1,5 @@
 """
 TODO
-    - record some object stats such as flux and size, but note the size
-      will be different in each band
     - record error messages
 """
 import time
