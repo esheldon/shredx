@@ -1,3 +1,10 @@
+"""
+TODO
+    - record the time for the fit
+    - record some object stats such as flux and size, but note the size
+      will be different in each band
+"""
+import time
 import numpy as np
 import logging
 import ngmix
@@ -47,6 +54,8 @@ def shred_fofs(*,
         if get_shredders == True
     """
 
+    tm0 = time.time()
+
     if fofs is not None:
         loader.add_fofs(fofs)
     elif 'fof_id' not in loader.cat.dtype.names:
@@ -60,11 +69,11 @@ def shred_fofs(*,
     hd = eu.stat.histogram(cat['fof_id'], more=True)
 
     rev = hd['rev']
-    num = hd['hist'].size
+    nfofs = hd['hist'].size
 
     reslist = []
     shredder_list = []
-    for i in range(num):
+    for i in range(nfofs):
 
         if rev[i] != rev[i+1]:
             ind = rev[rev[i]:rev[i+1]]
@@ -82,10 +91,15 @@ def shred_fofs(*,
             else:
 
                 logger.info('-'*70)
-                logger.info('processing %d/%d' % (i+1, num))
+                logger.info('processing %d/%d' % (i+1, nfofs))
+                ttm0 = time.time()
 
                 fof_id = cat['fof_id'][ind[0]]
-                logger.info('fof: %d ids: %s' % (fof_id, str(ind)))
+                fof_size = ind.size
+                logger.info(
+                    'fof: %d fof_size: %d '
+                    'ids: %s' % (fof_id, fof_size, str(ind))
+                )
 
                 fof_mbobs, fof_seg, fof_cat = loader.get_fof_mbobs(fof_id)
                 assert fof_cat.size == ind.size
@@ -101,6 +115,7 @@ def shred_fofs(*,
                     get_shredder=get_shredders,
                     **kw
                 )
+                logger.info('time: %g' % (time.time()-ttm0))
 
             if get_shredders:
                 output, s = res
@@ -110,11 +125,15 @@ def shred_fofs(*,
 
             reslist.append(output)
 
-        if show and i < num-1 and ind.size >= min_fofsize:
+        if show and i < nfofs-1 and ind.size >= min_fofsize:
             if input('hit a key (q to quit): ') == 'q':
                 return
 
     output = eu.numpy_util.combine_arrlist(reslist)
+
+    tm = time.time() - tm0
+    print('time:', tm)
+    print('time per:', tm/nfofs)
 
     if get_shredders:
         return output, shredder_list
