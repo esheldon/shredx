@@ -16,6 +16,7 @@ def shred_fofs(*,
                rng=None,
                get_shredders=False,
                show=False,
+               show_full=False,
                **kw):
     """
     Parameters
@@ -34,7 +35,9 @@ def shred_fofs(*,
     get_shredders: bool
         If true return a list of shredders rather than a list of results
     show: bool
-        If True, show some plots
+        If True, show some plots for FoF groups
+    show_full: bool
+        If True, show some plots for the full image
     **kw: extra plotting keywords
 
     Returns
@@ -49,7 +52,7 @@ def shred_fofs(*,
     elif 'fof_id' not in loader.cat.dtype.names:
         loader.find_fofs()
 
-    if show:
+    if show_full:
         loader.view(show=True, rng=rng, **kw)
 
     cat = loader.cat
@@ -62,6 +65,8 @@ def shred_fofs(*,
     reslist = []
     shredder_list = []
     for i in range(num):
+        logger.info('-'*70)
+        logger.info('processing %d/%d' % (i+1, num))
 
         if rev[i] != rev[i+1]:
             ind = rev[rev[i]:rev[i+1]]
@@ -84,6 +89,7 @@ def shred_fofs(*,
                 fof_mbobs, fof_seg, fof_cat = loader.get_fof_mbobs(fof_id)
                 assert fof_cat.size == ind.size
 
+                kw['seg'] = fof_seg
                 res = shred(
                     mbobs=fof_mbobs,
                     cat=fof_cat,
