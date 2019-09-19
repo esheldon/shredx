@@ -1,6 +1,5 @@
 """
 TODO
-    - record the time for the fit
     - record some object stats such as flux and size, but note the size
       will be different in each band
     - record error messages
@@ -23,6 +22,7 @@ def shred_fofs(*,
                min_fofsize=2,
                rng=None,
                get_shredders=False,
+               limit=None,
                show=False,
                show_full=False,
                **kw):
@@ -42,6 +42,8 @@ def shred_fofs(*,
         Random number generator
     get_shredders: bool
         If true return a list of shredders rather than a list of results
+    limit: int, optional
+        Process at most this many objects
     show: bool
         If True, show some plots for FoF groups
     show_full: bool
@@ -74,6 +76,7 @@ def shred_fofs(*,
 
     reslist = []
     shredder_list = []
+    nproc = 0
     for i in range(nfofs):
 
         if rev[i] != rev[i+1]:
@@ -115,6 +118,9 @@ def shred_fofs(*,
                     get_shredder=get_shredders,
                     **kw
                 )
+                nproc += 1
+                if nproc > limit:
+                    break
 
             if get_shredders:
                 output, s = res
@@ -178,6 +184,8 @@ def shred(*, mbobs, cat,
         returned value is output, shredder
     """
 
+    tm0 = time.time()
+
     nband = len(mbobs)
     ngauss_per = ngmix.gmix.get_model_ngauss(model)
 
@@ -205,11 +213,14 @@ def shred(*, mbobs, cat,
 
         res = s.get_result()
 
+    tm = time.time() - tm0
+
     output = _make_output(
         cat=cat,
         res=res,
         nband=nband,
         ngauss_per=ngauss_per,
+        time=tm,
     )
 
     if get_shredder:
@@ -218,7 +229,7 @@ def shred(*, mbobs, cat,
         return output
 
 
-def _make_output(*, cat, res, nband, ngauss_per):
+def _make_output(*, cat, res, nband, ngauss_per, time):
     """
     combine the input catalog with the rsult
 
@@ -240,6 +251,7 @@ def _make_output(*, cat, res, nband, ngauss_per):
     output = _make_output_struct(nobj, nband, ngauss_per)
 
     output['number'] = cat['number']
+    output['time'] = time
 
     if 'fof_id' in cat.dtype.names:
         output['fof_id'] = cat['fof_id']
@@ -254,7 +266,9 @@ def _make_output(*, cat, res, nband, ngauss_per):
         for n in resfields:
             output['coadd_%s' % n] = cres[n]
 
-        ppars = res['coadd_psf_gmix'].get_full_pars()
+        pgmix = res['coadd_psf_gmix']
+        ppars = pgmix.get_full_pars()
+        output['coadd_psf_T'] = pgmix.get_T()
         for i in range(nobj):
             output['coadd_psf_pars'][i, :] = ppars
 
@@ -263,13 +277,21 @@ def _make_output(*, cat, res, nband, ngauss_per):
             pars = gmix.get_full_pars()
             output['coadd_pars'] = pars.reshape(output['coadd_pars'].shape)
 
+            for i in range(nobj):
+                ipars = output['coadd_pars'][i]
+                igm = ngmix.GMix(pars=ipars)
+                output['coadd_T'][i] = igm.get_T()
+                output['coadd_flux'][i] = igm.get_flux()
+
         if 'band_results' in res:
             for band in range(nband):
                 bres = res['band_results'][band]
                 for n in resfields:
                     output['band_%s' % n][:, band] = bres[n]
 
-                bppars = res['band_psf_gmix'][band].get_full_pars()
+                pgmix = res['band_psf_gmix'][band]
+                bppars = pgmix.get_full_pars()
+                output['band_psf_T'][:, band] = pgmix.get_T()
                 for i in range(nobj):
                     output['band_psf_pars'][i, :, band] = bppars
 
@@ -278,6 +300,12 @@ def _make_output(*, cat, res, nband, ngauss_per):
                     bpars = bgmix.get_full_pars()
                     bpars = bpars.reshape(nobj, 6*ngauss_per)
                     output['band_pars'][:, :, band] = bpars
+
+                    for i in range(nobj):
+                        ipars = output['band_pars'][i, :, band]
+                        igm = ngmix.GMix(pars=ipars)
+                        output['band_flux'][i, band] = igm.get_flux()
+
 
     return output
 
@@ -297,13 +325,18 @@ def _make_output_struct(nobj, nband, ngauss_per):
         ('coadd_numiter', 'i4'),
         ('coadd_sky', 'f4'),
         ('coadd_psf_pars', 'f8', 6),
+        ('coadd_psf_T', 'f8'),
         ('coadd_pars', 'f8', 6*ngauss_per),
+        ('coadd_T', 'f8'),
+        ('coadd_flux', 'f8'),
 
         ('band_flags', 'i4', nband),
         ('band_numiter', 'i4', nband),
         ('band_sky', 'f4', nband),
         ('band_psf_pars', 'f8', (6, nband)),
+        ('band_psf_T', 'f8', nband),
         ('band_pars', 'f8', (6*ngauss_per, nband)),
+        ('band_flux', 'f8', nband),
 
         ('time', 'f4'),
     ]
