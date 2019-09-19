@@ -19,8 +19,10 @@ class Loader(object):
                  cat_file,
                  image_ext='sci',
                  weight_ext='wgt',
+                 mask_ext='msk',
                  pixbuf=10,
                  coord_offset=1,
+                 zero_weight_badpix=None,
                  rng=None):
         """
         Parameters
@@ -47,6 +49,8 @@ class Loader(object):
             sextractor position offsets, default 1 which is the sextractor
             convention.  Note if you used sep for object extraction, the offset
             is zero
+        zero_weight_badpix: int, optional
+            Zero the weight map where these pixels are set in the bitmask
         rng: np.random.RandomState
             Random number generator
         """
@@ -61,10 +65,12 @@ class Loader(object):
 
         self._image_ext = image_ext
         self._weight_ext = weight_ext
+        self._mask_ext = mask_ext
 
         self._rng = rng
         self._pixbuf = pixbuf
         self._coord_offset = coord_offset
+        self._zero_weight_badpix = zero_weight_badpix
         image_files = _get_file_list(image_files)
         psf_files = _get_file_list(psf_files)
         self.nband = len(image_files)
@@ -285,11 +291,20 @@ class Loader(object):
         mbobs = ngmix.MultiBandObsList()
 
         for band in range(self.nband):
-            image, weight = self._get_image_data(band, ranges)
+            image, weight, mask = self._get_image_data(band, ranges)
             jacob = self._get_jacobian(band, midrow, midcol)
             psf_obs = self._get_psf_obs(band, midrow, midcol)
 
             _replace_with_noise(image, weight, wout, self._rng)
+
+            # zero the weight map for bad pixels.  Note we are doing this after
+            # replacing non-member objects pixels with noise, in case the
+            # weight map ends up all zero
+
+            if self._zero_weight_badpix is not None:
+                _zero_weight_map_for_badpix(
+                    mask, weight, self._zero_weight_badpix,
+                )
 
             obs = ngmix.Observation(
                 image,
@@ -324,7 +339,7 @@ class Loader(object):
         psf = self.psf_list[band]
 
         image = psf.get_rec(midrow, midcol)
-        cen = psf.get_center()
+        cen = psf.get_center(midrow, midcol)
 
         weight = image*0 + 1.0/0.001**2
 
@@ -357,6 +372,7 @@ class Loader(object):
 
         image_hdu = self.image_hdu_list[band]
         weight_hdu = self.weight_hdu_list[band]
+        mask_hdu = self.mask_hdu_list[band]
 
         image = image_hdu[
             minrow:maxrow,
@@ -366,8 +382,12 @@ class Loader(object):
             minrow:maxrow,
             mincol:maxcol,
         ]
+        mask = mask_hdu[
+            minrow:maxrow,
+            mincol:maxcol,
+        ]
 
-        return image, weight
+        return image, weight, mask
 
     def _get_jacobian(self, band, midrow, midcol):
         """
@@ -431,8 +451,7 @@ class Loader(object):
 
     def _get_outside_pixels(self, numbers, seg):
         """
-        get indices of pixels not included in the
-        seg maps associated with the input numbers
+        get indices of pixels assigned to objects not in the input list
 
         Parameters
         ----------
@@ -444,16 +463,15 @@ class Loader(object):
         Returns
         -------
         wout: tuple of arrays
-            Indices of pixels not assigned to the specified objects, as
+            Indices of pixels not assigned to objects not in the input list, as
             returned by the np.where function
         """
 
+        logic = seg > 0
+
         for i, number in enumerate(numbers):
             tlogic = seg != number
-            if i == 0:
-                logic = tlogic
-            else:
-                logic &= tlogic
+            logic &= tlogic
 
         wout = np.where(logic)
         return wout
@@ -466,9 +484,37 @@ class Loader(object):
         logger.info('loading cat file %s' % cat_file)
         cat = fitsio.read(cat_file, lower=True)
 
-        req = ['number', 'x', 'y', 'xmin', 'xmax', 'ymin', 'ymax']
+        names = cat.dtype.names
+        if 'number' not in names:
+            raise ValueError('catalog must have number field')
+
+        if 'flux' not in names:
+            if 'flux_auto' not in names:
+                raise ValueError('catalog must have flux or flux_auto')
+            add_dt = [('flux', 'f4')]
+            cat = eu.numpy_util.add_fields(cat, add_dt)
+            cat['flux'] = cat['flux_auto']
+            names = cat.dtype.names
+
+        req = [
+            'x', 'y', 'x2', 'y2',
+            'xmin', 'xmax', 'ymin', 'ymax',
+        ]
+
+        if 'x_image' in names:
+
+            names = []
+            for n in cat.dtype.names:
+                if n[-6:] == '_image':
+                    new_n = n[:-6]
+                else:
+                    new_n = n
+                names.append(new_n)
+
+            cat.dtype.names = names
+
         for n in req:
-            if n not in cat.dtype.names:
+            if n not in names:
                 raise ValueError('catalog must have field %s' % n)
 
         s = cat['number'].argsort()
@@ -495,6 +541,7 @@ class Loader(object):
 
         self.image_hdu_list = []
         self.weight_hdu_list = []
+        self.mask_hdu_list = []
         self.wcs_list = []
 
         for fname in image_files:
@@ -503,9 +550,11 @@ class Loader(object):
 
             image_hdu = f[self._image_ext]
             weight_hdu = f[self._weight_ext]
+            mask_hdu = f[self._mask_ext]
 
             self.image_hdu_list.append(image_hdu)
             self.weight_hdu_list.append(weight_hdu)
+            self.mask_hdu_list.append(mask_hdu)
 
             header = image_hdu.read_header()
             wcs = eu.wcsutil.WCS(header)
@@ -541,6 +590,20 @@ def _replace_with_noise(image, weight, indices, rng):
         size=image.shape
     )
     image[indices] = noise_image[indices]
+
+
+def _zero_weight_map_for_badpix(mask,
+                                weight,
+                                badpix):
+    """
+    zero the weight map for any pixels with the input bitmask
+    set
+    """
+
+    w = np.where((mask & badpix) != 0)
+    if w[0].size > 0:
+        logger.info('zeroing weight for %d bad pixels' % w[0].size)
+        weight[w] = 0.0
 
 
 def _get_file_list(image_files):
