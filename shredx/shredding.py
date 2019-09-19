@@ -65,8 +65,6 @@ def shred_fofs(*,
     reslist = []
     shredder_list = []
     for i in range(num):
-        logger.info('-'*70)
-        logger.info('processing %d/%d' % (i+1, num))
 
         if rev[i] != rev[i+1]:
             ind = rev[rev[i]:rev[i+1]]
@@ -82,6 +80,9 @@ def shred_fofs(*,
                     **kw
                 )
             else:
+
+                logger.info('-'*70)
+                logger.info('processing %d/%d' % (i+1, num))
 
                 fof_id = cat['fof_id'][ind[0]]
                 logger.info('fof: %d ids: %s' % (fof_id, str(ind)))
