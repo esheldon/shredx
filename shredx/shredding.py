@@ -133,6 +133,10 @@ def shred_fofs(*,
                     **kw
                 )
 
+                if show:
+                    if input('hit a key (q to quit): ') == 'q':
+                        return
+
             if get_shredders:
                 output, s = res
                 shredder_list.append(s)
@@ -144,9 +148,6 @@ def shred_fofs(*,
 
             reslist.append(output)
 
-        if show and i < nfofs-1 and ind.size >= min_fofsize:
-            if input('hit a key (q to quit): ') == 'q':
-                return
 
     output = eu.numpy_util.combine_arrlist(reslist)
 
