@@ -16,11 +16,17 @@ def test_shredding_smoke(seed, show=False, **kw):
 
     shredx.setup_logging('debug')
     rng = np.random.RandomState(seed)
+    psf_ngauss = 2
 
     with TemporaryDirectory() as tmpdir:
 
         loader = shredx.sim.get_loader(tmpdir, rng=rng)
-        output = shredx.shred_fofs(loader=loader, show=show, rng=rng, **kw)
+        output = shredx.shred_fofs(
+            loader=loader,
+            psf_ngauss=psf_ngauss,
+            show=show, rng=rng,
+            **kw
+        )
 
     return output
 
@@ -42,11 +48,14 @@ def test_shredding(show=False, **kw):
     shredx.setup_logging('debug')
     rng = np.random.RandomState(seed)
 
+    psf_ngauss = 2
+
     with TemporaryDirectory() as tmpdir:
 
         loader = shredx.sim.get_loader(tmpdir, rng=rng)
         outputs, shredders = shredx.shred_fofs(
             loader=loader,
+            psf_ngauss=psf_ngauss,
             show=show,
             get_shredders=True,
             rng=rng,
@@ -92,6 +101,8 @@ def test_shredding_bad_columns(seed, show=False, **kw):
     logger.info('seed: %d' % seed)
     rng = np.random.RandomState(seed)
 
+    psf_ngauss = 2
+
     with TemporaryDirectory() as tmpdir:
 
         config = shredder.sim.get_default_config()
@@ -100,6 +111,7 @@ def test_shredding_bad_columns(seed, show=False, **kw):
         loader = shredx.sim.get_loader(tmpdir, config=config, rng=rng)
         shredx.shred_fofs(
             loader=loader,
+            psf_ngauss=psf_ngauss,
             show=show,
             fill_zero_weight=True,
             rng=rng,

@@ -15,8 +15,9 @@ logger = logging.getLogger(__name__)
 
 def shred_fofs(*,
                loader,
-               fofs=None,
+               psf_ngauss,
                model='dev',
+               fofs=None,
                fill_zero_weight=True,
                min_fofsize=2,
                rng=None,
@@ -30,6 +31,8 @@ def shred_fofs(*,
     ----------
     loader:  shredx.Loader
         The data loader
+    psf_ngauss: int
+        Number of gaussians to use for the psf fitting
     fofs: array with fields
         The fof group data, e.g. returned by fofx.get_fofs
     model: str
@@ -95,7 +98,8 @@ def shred_fofs(*,
             if fof_size < min_fofsize:
                 fof_cat = cat[ind].copy()
                 res = shred(
-                    mbobs=[0]*loader.nband,
+                    obs=[0]*loader.nband,
+                    psf_ngauss=psf_ngauss,
                     cat=fof_cat,
                     model=model,
                     get_shredder=get_shredders,
@@ -118,7 +122,8 @@ def shred_fofs(*,
 
                 kw['seg'] = fof_seg
                 res = shred(
-                    mbobs=fof_mbobs,
+                    obs=fof_mbobs,
+                    psf_ngauss=psf_ngauss,
                     cat=fof_cat,
                     model=model,
                     rng=rng,
@@ -155,7 +160,10 @@ def shred_fofs(*,
         return output
 
 
-def shred(*, mbobs, cat,
+def shred(*,
+          obs,
+          cat,
+          psf_ngauss,
           model='dev',
           rng=None,
           show=False,
@@ -168,11 +176,13 @@ def shred(*, mbobs, cat,
 
     Parameters
     ----------
-    mbobs: ngmix.MultiBandObsList
+    obs: ngmix.MultiBandObsList
         observations with image data
     cat: array with fields
         Array with fields needed for the guesser.  See
         shredder.
+    psf_ngauss: int
+        Number of gaussians to use for the psf fitting
     model: str
         'dev', 'exp', 'bdf', 'bd', default 'dev'
     rng: np.random.RandomState
@@ -189,6 +199,8 @@ def shred(*, mbobs, cat,
         The shredder used to deblend. If get_shredder is True, the
         returned value is output, shredder
     """
+
+    mbobs = obs
 
     tm0 = time.time()
 
@@ -208,7 +220,8 @@ def shred(*, mbobs, cat,
         )
 
         s = shredder.Shredder(
-            mbobs,
+            obs=mbobs,
+            psf_ngauss=psf_ngauss,
             fill_zero_weight=fill_zero_weight,
             rng=rng,
         )
@@ -223,6 +236,7 @@ def shred(*, mbobs, cat,
 
     output = _make_output(
         cat=cat,
+        psf_ngauss=psf_ngauss,
         res=res,
         nband=nband,
         ngauss_per=ngauss_per,
@@ -235,7 +249,7 @@ def shred(*, mbobs, cat,
         return output
 
 
-def _make_output(*, cat, res, nband, ngauss_per, time):
+def _make_output(*, cat, psf_ngauss, res, nband, ngauss_per, time):
     """
     combine the input catalog with the rsult
 
@@ -254,7 +268,12 @@ def _make_output(*, cat, res, nband, ngauss_per, time):
     resfields = ('flags', 'numiter', 'sky')
 
     nobj = cat.size
-    output = _make_output_struct(nobj, nband, ngauss_per)
+    output = _make_output_struct(
+        nobj=nobj,
+        nband=nband,
+        ngauss_per=ngauss_per,
+        psf_ngauss=psf_ngauss,
+    )
 
     output['number'] = cat['number']
     output['time'] = time
@@ -315,7 +334,11 @@ def _make_output(*, cat, res, nband, ngauss_per, time):
     return output
 
 
-def _make_output_struct(nobj, nband, ngauss_per):
+def _make_output_struct(*,
+                        nobj,
+                        nband,
+                        ngauss_per,
+                        psf_ngauss):
     """
     make an output structure
     """
@@ -329,7 +352,7 @@ def _make_output_struct(nobj, nband, ngauss_per):
         ('coadd_flags', 'i4'),
         ('coadd_numiter', 'i4'),
         ('coadd_sky', 'f4'),
-        ('coadd_psf_pars', 'f8', 6),
+        ('coadd_psf_pars', 'f8', 6*psf_ngauss),
         ('coadd_psf_T', 'f8'),
         ('coadd_pars', 'f8', 6*ngauss_per),
         ('coadd_T', 'f8'),
@@ -338,7 +361,7 @@ def _make_output_struct(nobj, nband, ngauss_per):
         ('band_flags', 'i4', nband),
         ('band_numiter', 'i4', nband),
         ('band_sky', 'f4', nband),
-        ('band_psf_pars', 'f8', (6, nband)),
+        ('band_psf_pars', 'f8', (6*psf_ngauss, nband)),
         ('band_psf_T', 'f8', nband),
         ('band_pars', 'f8', (6*ngauss_per, nband)),
         ('band_flux', 'f8', nband),
