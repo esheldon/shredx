@@ -338,8 +338,11 @@ class Loader(object):
 
         psf = self.psf_list[band]
 
-        image = psf.get_rec(midrow, midcol)
-        cen = psf.get_center(midrow, midcol)
+        rrow = round(midrow)
+        rcol = round(midcol)
+
+        image = psf.get_rec(rrow, rcol)
+        cen = psf.get_center(rrow, rcol)
 
         weight = image*0 + 1.0/0.001**2
 
