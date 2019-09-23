@@ -36,6 +36,8 @@ def shred_fofs(*,
     fofs: array with fields
         The fof group data, e.g. returned by fofx.get_fofs
     model: str
+        Initial guess for gaussians are laid out with relative size and flux
+        based on the model
         'dev', 'exp', 'bdf', 'bd', default 'dev'
     min_fofsize: int
         Minimum fof size to process.  Default is 2, so single
@@ -184,6 +186,8 @@ def shred(*,
     psf_ngauss: int
         Number of gaussians to use for the psf fitting
     model: str
+        Initial guess for gaussians are laid out with relative size and flux
+        based on the model
         'dev', 'exp', 'bdf', 'bd', default 'dev'
     rng: np.random.RandomState
         Random number generator
@@ -349,7 +353,7 @@ def _add_extra(output, cat):
         output['ra'] = cat['ra']
         output['dec'] = cat['dec']
 
-    if 'alphawin_j2000' in names:
+    elif 'alphawin_j2000' in names:
         output['ra'] = cat['alphawin_j2000']
         output['dec'] = cat['deltawin_j2000']
 

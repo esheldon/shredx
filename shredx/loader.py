@@ -92,6 +92,7 @@ class Loader(object):
         import fofx
 
         fofs = fofx.get_fofs(self.seg)
+        self.ocat = fofx.add_fofs_to_cat(self.ocat, fofs)
         self.cat = fofx.add_fofs_to_cat(self.cat, fofs)
 
     def add_fofs(self, fofs):
@@ -100,6 +101,7 @@ class Loader(object):
         """
 
         import fofx
+        self.ocat = fofx.add_fofs_to_cat(self.ocat, fofs)
         self.cat = fofx.add_fofs_to_cat(self.cat, fofs)
 
     def view(self,
@@ -485,50 +487,77 @@ class Loader(object):
         """
 
         logger.info('loading cat file %s' % cat_file)
-        cat = fitsio.read(cat_file, lower=True)
+        ocat = fitsio.read(cat_file, lower=True)
 
-        names = cat.dtype.names
+        names = ocat.dtype.names
+
         if 'number' not in names:
             raise ValueError('catalog must have number field')
+
+        s = ocat['number'].argsort()
+        ocat = ocat[s]
+
+        enum = np.arange(1, ocat.size+1)
+        assert np.all(ocat['number'] == enum)
 
         if 'flux' not in names:
             if 'flux_auto' not in names:
                 raise ValueError('catalog must have flux or flux_auto')
             add_dt = [('flux', 'f4')]
-            cat = eu.numpy_util.add_fields(cat, add_dt)
-            cat['flux'] = cat['flux_auto']
-            names = cat.dtype.names
+            ocat = eu.numpy_util.add_fields(ocat, add_dt)
+            ocat['flux'] = ocat['flux_auto']
+            names = ocat.dtype.names
 
         req = [
-            'x', 'y', 'x2', 'y2',
             'xmin', 'xmax', 'ymin', 'ymax',
         ]
+        mreq = ['x', 'y', 'x2', 'y2']
 
-        if 'x_image' in names:
+        if 'xmin' in names:
+            cat = ocat.copy()
+        else:
+            # we need to copy some data to standard names
+            dtype = [
+                ('x', 'f8'),
+                ('y', 'f8'),
+                ('x2', 'f8'),
+                ('y2', 'f8'),
+                ('xmin', 'i4'),
+                ('xmax', 'i4'),
+                ('ymin', 'i4'),
+                ('ymax', 'i4'),
+            ]
 
-            names = []
-            for n in cat.dtype.names:
-                if n[-6:] == '_image':
-                    new_n = n[:-6]
+            cat = eu.numpy_util.add_fields(ocat, dtype)
+
+            # we prefer win quantities
+            wnamer = Namer(back='win_image')
+            inamer = Namer(back='_image')
+
+            for name in req:
+                if inamer(name) in names:
+                    logger.info('%s -> %s' % (inamer(name), name))
+                    cat[name] = ocat[inamer(name)]
                 else:
-                    new_n = n
-                names.append(new_n)
+                    raise ValueError('no xmin, xmin_image etc. fields found')
 
-            cat.dtype.names = names
-
-        for n in req:
-            if n not in names:
-                raise ValueError('catalog must have field %s' % n)
-
-        s = cat['number'].argsort()
-        self.cat = cat[s]
+            for name in mreq:
+                if wnamer(name) in names:
+                    logger.info('%s -> %s' % (wnamer(name), name))
+                    cat[name] = ocat[wnamer(name)]
+                elif inamer(name) in names:
+                    logger.info('%s -> %s' % (inamer(name), name))
+                    cat[name] = ocat[inamer(name)]
+                else:
+                    raise ValueError('no x, x_image or xwin_image '
+                                     'etc. fields found')
 
         if self._coord_offset != 0:
-            for n in ['x', 'y', 'xmin', 'xmax', 'ymin', 'ymax']:
-                self.cat[n] -= self._coord_offset
+            for name in ['x', 'y', 'xmin', 'xmax', 'ymin', 'ymax']:
+                cat[name] -= self._coord_offset
 
-        enum = np.arange(1, cat.size+1)
-        assert np.all(cat['number'] == enum)
+        self.ocat = ocat
+        self.cat = cat
 
     def _load_seg(self, seg_file):
         """
@@ -614,3 +643,32 @@ def _get_file_list(image_files):
         return [image_files]
     else:
         return image_files
+
+
+class Namer(object):
+    """
+    create strings with a specified front prefix
+    """
+    def __init__(self, front=None, back=None):
+        if front == '':
+            front = None
+        if back == '' or back == 'noshear':
+            back = None
+
+        self.front = front
+        self.back = back
+
+        if self.front is None and self.back is None:
+            self.nomod = True
+        else:
+            self.nomod = False
+
+    def __call__(self, name):
+        n = name
+        if not self.nomod:
+            if self.front is not None:
+                n = '%s%s' % (self.front, n)
+            if self.back is not None:
+                n = '%s%s' % (n, self.back)
+
+        return n
