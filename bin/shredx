@@ -20,6 +20,7 @@ def get_args():
     parser.add_argument('--outfile', required=True)
 
     parser.add_argument('--config', help='config file')
+    parser.add_argument('--ids', help='file with ids to add to output')
 
     parser.add_argument('--start', type=int, default=None)
     parser.add_argument('--num', type=int, default=None)
@@ -94,15 +95,51 @@ def makedirs(args):
         os.makedirs(dirname, exist_ok=True)
 
 
+def read_ids(args):
+    """
+    add id information to the output
+    """
+
+    if args.ids is not None:
+        logger.info('reading ids from: %s' % args.ids)
+        ids = fitsio.read(args.ids, lower=True)
+
+        assert 'number' in ids.dtype.names
+        assert 'id' in ids.dtype.names
+    else:
+        ids = None
+
+    return ids
+
+
+def add_ids(cat, ids):
+    """
+    add id information to the output
+    """
+    import esutil as eu
+
+    logger.info('adding ids')
+
+    mids, mcat = eu.numpy_util.match(ids['number'], cat['number'])
+
+    if mcat.size != cat.size:
+        raise ValueError('not all numbers matched to id catalog')
+
+    cat['id'][mcat] = ids['id'][mids]
+
+    return cat
+
+
 def main():
     args = get_args()
+    shredx.logging.setup_logging(args.loglevel)
+
+    ids = read_ids(args)
     makedirs(args)
 
     logger.info('will write: %s' % args.outfile)
 
     config = read_config(args)
-
-    shredx.logging.setup_logging(args.loglevel)
 
     fof_range = get_fof_range(args)
 
@@ -130,6 +167,9 @@ def main():
         scale=0.1,
         width=1500,
     )
+
+    if ids is not None:
+        output = add_ids(output, ids)
 
     if not args.showonly:
         logger.info('writing to: %s' % args.outfile)
