@@ -24,6 +24,7 @@ def shred_fofs(*,
                get_shredders=False,
                fof_range=None,
                show=False,
+               showonly=False,
                show_full=False,
                **kw):
     """
@@ -51,6 +52,8 @@ def shred_fofs(*,
         [start, end)
     show: bool
         If True, show some plots for FoF groups
+    showonly: bool
+        If True, just show images don't do fits
     show_full: bool
         If True, show some plots for the full image
     **kw: extra plotting keywords
@@ -122,20 +125,25 @@ def shred_fofs(*,
                 fof_mbobs, fof_seg, fof_cat = loader.get_fof_mbobs(fof_id)
                 assert fof_cat.size == ind.size
 
-                kw['seg'] = fof_seg
-                res = shred(
-                    obs=fof_mbobs,
-                    psf_ngauss=psf_ngauss,
-                    cat=fof_cat,
-                    model=model,
-                    rng=rng,
-                    show=show,
-                    fill_zero_weight=fill_zero_weight,
-                    get_shredder=get_shredders,
-                    **kw
-                )
+                if showonly:
+                    shredder.vis.view_mbobs(fof_mbobs, show=True, **kw)
+                    res = np.zeros([])
+                else:
 
-                if show:
+                    kw['seg'] = fof_seg
+                    res = shred(
+                        obs=fof_mbobs,
+                        psf_ngauss=psf_ngauss,
+                        cat=fof_cat,
+                        model=model,
+                        rng=rng,
+                        show=show,
+                        fill_zero_weight=fill_zero_weight,
+                        get_shredder=get_shredders,
+                        **kw
+                    )
+
+                if show or showonly:
                     if input('hit a key (q to quit): ') == 'q':
                         return
 
