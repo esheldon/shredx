@@ -148,7 +148,6 @@ def shred_fofs(*,
 
             reslist.append(output)
 
-
     output = eu.numpy_util.combine_arrlist(reslist)
 
     tm = time.time() - tm0
@@ -228,10 +227,13 @@ def shred(*,
         )
         s.shred(gm_guess)
 
-        if show:
-            s.plot_comparison(show=True, **kw)
-
         res = s.get_result()
+
+        if show:
+            if res['flags'] == 0:
+                s.plot_comparison(show=True, **kw)
+            else:
+                shredder.vis.view_mbobs(s.mbobs)
 
     tm = time.time() - tm0
 
@@ -278,6 +280,8 @@ def _make_output(*, cat, psf_ngauss, res, nband, ngauss_per, time):
 
     output['number'] = cat['number']
     output['time'] = time
+
+    _add_extra(output, cat)
 
     if 'fof_id' in cat.dtype.names:
         output['fof_id'] = cat['fof_id']
@@ -335,6 +339,24 @@ def _make_output(*, cat, psf_ngauss, res, nband, ngauss_per, time):
     return output
 
 
+def _add_extra(output, cat):
+    """
+    add optional extra fields from the catalog
+    """
+
+    names = cat.dtype.names
+    if 'ra' in names:
+        output['ra'] = cat['ra']
+        output['dec'] = cat['dec']
+
+    if 'alphawin_j2000' in names:
+        output['ra'] = cat['alphawin_j2000']
+        output['dec'] = cat['deltawin_j2000']
+
+    if 'id' in names:
+        output['id'] = cat['id']
+
+
 def _make_output_struct(*,
                         nobj,
                         nband,
@@ -346,7 +368,10 @@ def _make_output_struct(*,
     from shredder import procflags
 
     dt = [
+        ('id', 'i8'),
         ('number', 'i4'),
+        ('ra', 'f8'),
+        ('dec', 'f8'),
         ('fof_id', 'i4'),
         ('fof_size', 'i4'),
         ('flags', 'i4'),
