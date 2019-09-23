@@ -6,6 +6,7 @@ import shredx
 import fitsio
 import argparse
 import yaml
+import esutil as eu
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +96,18 @@ def makedirs(args):
         os.makedirs(dirname, exist_ok=True)
 
 
+def match_ids(cat, ids):
+    """
+    match the catalog to the ids catalog
+    """
+    mids, mcat = eu.numpy_util.match(ids['number'], cat['number'])
+
+    if mcat.size != cat.size:
+        raise ValueError('not all numbers matched to id catalog')
+
+    return mids, mcat
+
+
 def read_ids(args):
     """
     add id information to the output
@@ -106,6 +119,13 @@ def read_ids(args):
 
         assert 'number' in ids.dtype.names
         assert 'id' in ids.dtype.names
+
+        # do the match to catch the error now rather than running to the end
+        # and failing then
+
+        cat = fitsio.read(args.cat, lower=True)
+        match_ids(cat, ids)
+
     else:
         ids = None
 
@@ -116,15 +136,10 @@ def add_ids(cat, ids):
     """
     add id information to the output
     """
-    import esutil as eu
 
     logger.info('adding ids')
 
-    mids, mcat = eu.numpy_util.match(ids['number'], cat['number'])
-
-    if mcat.size != cat.size:
-        raise ValueError('not all numbers matched to id catalog')
-
+    mids, mcat = match_ids(cat, ids)
     cat['id'][mcat] = ids['id'][mids]
 
     return cat
