@@ -15,10 +15,9 @@ logger = logging.getLogger(__name__)
 
 def shred_fofs(*,
                loader,
-               psf_ngauss,
-               model='dev',
+               shredconf,
+               guess_model='dev',
                fofs=None,
-               fill_zero_weight=True,
                min_fofsize=2,
                rng=None,
                get_shredders=False,
@@ -32,11 +31,12 @@ def shred_fofs(*,
     ----------
     loader:  shredx.Loader
         The data loader
-    psf_ngauss: int
-        Number of gaussians to use for the psf fitting
+    shredconf: dict
+        A dict passed as options to the shredder. At a minimum this must
+        contain 'psf_ngauss'.  See shredder.Shredder for options
     fofs: array with fields
         The fof group data, e.g. returned by fofx.get_fofs
-    model: str
+    guess_model: str
         Initial guess for gaussians are laid out with relative size and flux
         based on the model
         'dev', 'exp', 'bdf', 'bd', default 'dev'
@@ -104,9 +104,9 @@ def shred_fofs(*,
                 fof_cat = cat[ind].copy()
                 res = shred(
                     obs=[0]*loader.nband,
-                    psf_ngauss=psf_ngauss,
+                    shredconf=shredconf,
                     cat=fof_cat,
-                    model=model,
+                    guess_model=guess_model,
                     get_shredder=get_shredders,
                     skip_fit=True,
                     **kw
@@ -133,12 +133,11 @@ def shred_fofs(*,
                     kw['seg'] = fof_seg
                     res = shred(
                         obs=fof_mbobs,
-                        psf_ngauss=psf_ngauss,
+                        shredconf=shredconf,
                         cat=fof_cat,
-                        model=model,
+                        guess_model=guess_model,
                         rng=rng,
                         show=show,
-                        fill_zero_weight=fill_zero_weight,
                         get_shredder=get_shredders,
                         **kw
                     )
@@ -173,11 +172,10 @@ def shred_fofs(*,
 def shred(*,
           obs,
           cat,
-          psf_ngauss,
-          model='dev',
+          shredconf,
+          guess_model='dev',
           rng=None,
           show=False,
-          fill_zero_weight=True,
           get_shredder=False,
           skip_fit=False,
           **kw):
@@ -191,9 +189,9 @@ def shred(*,
     cat: array with fields
         Array with fields needed for the guesser.  See
         shredder.
-    psf_ngauss: int
-        Number of gaussians to use for the psf fitting
-    model: str
+    shredconf: dict
+        A dict passed as options to the shredder. At a minimum this must
+    guess_model: str
         Initial guess for gaussians are laid out with relative size and flux
         based on the model
         'dev', 'exp', 'bdf', 'bd', default 'dev'
@@ -217,7 +215,7 @@ def shred(*,
     tm0 = time.time()
 
     nband = len(mbobs)
-    ngauss_per = ngmix.gmix.get_model_ngauss(model)
+    ngauss_per = ngmix.gmix.get_model_ngauss(guess_model)
 
     if skip_fit:
         res = {'flags': shredder.procflags.NO_ATTEMPT}
@@ -227,15 +225,14 @@ def shred(*,
         gm_guess = shredder.get_guess(
             cat,
             jacobian=mbobs[0][0].jacobian,
-            model=model,
+            model=guess_model,
             rng=rng,
         )
 
         s = shredder.Shredder(
             obs=mbobs,
-            psf_ngauss=psf_ngauss,
-            fill_zero_weight=fill_zero_weight,
             rng=rng,
+            **shredconf
         )
         s.shred(gm_guess)
 
@@ -251,7 +248,7 @@ def shred(*,
 
     output = _make_output(
         cat=cat,
-        psf_ngauss=psf_ngauss,
+        psf_ngauss=shredconf['psf_ngauss'],
         res=res,
         nband=nband,
         ngauss_per=ngauss_per,
