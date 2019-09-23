@@ -1,4 +1,8 @@
 from distutils.core import setup
+from glob import glob
+
+scripts = glob('bin/*')
+scripts = [s for s in scripts if '~' not in s]
 
 setup(
     name='shredx',
@@ -9,4 +13,5 @@ setup(
     author='Erin Scott Sheldon',
     author_email='erin.sheldon@gmail.com',
     packages=['shredx'],
+    scripts=scripts,
 )
