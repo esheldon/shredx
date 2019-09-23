@@ -1,0 +1,128 @@
+#!/usr/bin/env python
+import logging
+import numpy as np
+import shredx
+import fitsio
+import argparse
+import yaml
+
+logger = logging.getLogger(__name__)
+
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seg', required=True)
+    parser.add_argument('--cat', required=True)
+    parser.add_argument('--images', nargs='+', required=True)
+    parser.add_argument('--psfs', nargs='+', required=True)
+    parser.add_argument('--seed', type=int, required=True)
+    parser.add_argument('--outfile', required=True)
+
+    parser.add_argument('--config', help='config file')
+
+    parser.add_argument('--start', type=int, default=None)
+    parser.add_argument('--num', type=int, default=None)
+    parser.add_argument('--fof-range', help='interval [start, end)')
+
+    parser.add_argument('--show', action='store_true')
+    parser.add_argument('--showonly', action='store_true')
+
+    parser.add_argument('--loglevel', default='info')
+
+    return parser.parse_args()
+
+
+DEFAULT_CONFIG = {
+    'data': {
+        'zero_weight_badpix': 0,
+    },
+    'guess': {
+        'model': 'dev',
+    },
+    'shredding': {
+        'psf_ngauss': 5,
+    },
+}
+
+
+def read_config(args):
+    if args.config is None:
+        conf = DEFAULT_CONFIG
+    else:
+        with open(args.config) as fobj:
+            conf = yaml.load(fobj, Loader=yaml.Loader)
+
+        if 'shredding' not in conf:
+            conf['shredding'] = DEFAULT_CONFIG['shredding']
+
+        if 'guess' not in conf:
+            conf['guess'] = DEFAULT_CONFIG['guess']
+
+        if 'data' not in conf:
+            conf['data'] = DEFAULT_CONFIG['data']
+
+        assert 'psf_ngauss' in conf['shredding']
+        assert 'model' in conf['guess']
+        assert 'zero_weight_badpix' in conf['data']
+
+    return conf
+
+
+def get_fof_range(args):
+    """
+    get the fof range [start, end) from the full input
+    fof range or from start/num
+    """
+    fof_range = []
+
+    if args.fof_range is not None:
+        fof_range = [int(t) for t in args.fof_range.split(',')]
+    elif args.start is not None:
+        assert args.num is not None,\
+            'send --num with --start'
+        fof_range = [args.start, args.start+args.num]
+    return fof_range
+
+
+def main():
+    args = get_args()
+
+    logger.info('will write: %s' % args.outfile)
+
+    config = read_config(args)
+
+    shredx.logging.setup_logging(args.loglevel)
+
+    fof_range = get_fof_range(args)
+
+    rng = np.random.RandomState(args.seed)
+
+    assert len(args.images) == len(args.psfs)
+
+    loader = shredx.Loader(
+        image_files=args.images,
+        psf_files=args.psfs,
+        seg_file=args.seg,
+        cat_file=args.cat,
+        zero_weight_badpix=config['data']['zero_weight_badpix'],
+        rng=rng,
+    )
+
+    output = shredx.shred_fofs(
+        loader=loader,
+        shredconf=config['shredding'],
+        model=config['guess']['model'],
+        fof_range=fof_range,
+        show=args.show,
+        showonly=args.showonly,
+        rng=rng,
+        scale=0.1,
+        width=1500,
+    )
+
+    logger.info('writing to: %s' % args.outfile)
+    fitsio.write(args.outfile, output, clobber=True)
+
+
+if __name__ == '__main__':
+    main()
