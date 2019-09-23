@@ -152,7 +152,7 @@ def shred_fofs(*,
             else:
                 output = res
 
-            if fof_size >= min_fofsize:
+            if fof_size >= min_fofsize and not showonly:
                 logger.info('time: %g' % output['time'][0])
 
             reslist.append(output)
