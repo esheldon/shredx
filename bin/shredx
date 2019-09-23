@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os
 import logging
 import numpy as np
 import shredx
@@ -84,8 +85,18 @@ def get_fof_range(args):
     return fof_range
 
 
+def makedirs(args):
+    """
+    make the output directory
+    """
+    dirname = os.path.dirname(args.outfile)
+    if not os.path.exists(dirname):
+        os.makedirs(dirname, exist_ok=True)
+
+
 def main():
     args = get_args()
+    makedirs(args)
 
     logger.info('will write: %s' % args.outfile)
 
@@ -120,8 +131,9 @@ def main():
         width=1500,
     )
 
-    logger.info('writing to: %s' % args.outfile)
-    fitsio.write(args.outfile, output, clobber=True)
+    if not args.showonly:
+        logger.info('writing to: %s' % args.outfile)
+        fitsio.write(args.outfile, output, clobber=True)
 
 
 if __name__ == '__main__':
