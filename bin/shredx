@@ -5,7 +5,6 @@ import numpy as np
 import shredx
 import fitsio
 import argparse
-import yaml
 import esutil as eu
 
 logger = logging.getLogger(__name__)
@@ -20,6 +19,11 @@ def get_args():
     parser.add_argument('--seed', type=int, required=True)
     parser.add_argument('--outfile', required=True)
 
+    parser.add_argument('--fofs',
+                        help=('if sent, used for group identification. '
+                              'Otherwise it is assumed the fof '
+                              'information is in the catalog'))
+
     parser.add_argument('--config', help='config file')
     parser.add_argument('--ids', help='file with ids to add to output')
 
@@ -33,49 +37,6 @@ def get_args():
     parser.add_argument('--loglevel', default='info')
 
     return parser.parse_args()
-
-
-DEFAULT_CONFIG = {
-    'fofs': {
-        'min_fofsize': 2,
-    },
-    'data': {
-        'zero_weight_badpix': 0,
-    },
-    'guess': {
-        'model': 'dev',
-    },
-    'shredding': {
-        'psf_ngauss': 5,
-    },
-}
-
-
-def read_config(args):
-    if args.config is None:
-        conf = DEFAULT_CONFIG
-    else:
-        with open(args.config) as fobj:
-            conf = yaml.load(fobj, Loader=yaml.Loader)
-
-        if 'fofs' not in conf:
-            conf['fofs'] = DEFAULT_CONFIG['fofs']
-
-        if 'shredding' not in conf:
-            conf['shredding'] = DEFAULT_CONFIG['shredding']
-
-        if 'guess' not in conf:
-            conf['guess'] = DEFAULT_CONFIG['guess']
-
-        if 'data' not in conf:
-            conf['data'] = DEFAULT_CONFIG['data']
-
-        assert 'min_fofsize' in conf['fofs']
-        assert 'psf_ngauss' in conf['shredding']
-        assert 'model' in conf['guess']
-        assert 'zero_weight_badpix' in conf['data']
-
-    return conf
 
 
 def get_fof_range(args):
@@ -164,7 +125,7 @@ def main():
 
     logger.info('will write: %s' % args.outfile)
 
-    config = read_config(args)
+    config = shredx.get_config(config_file=args.config)
 
     fof_range = get_fof_range(args)
 
@@ -180,6 +141,11 @@ def main():
         zero_weight_badpix=config['data']['zero_weight_badpix'],
         rng=rng,
     )
+
+    if args.fofs is not None:
+        logger.info('adding fofs from %s' % args.fofs)
+        fofs = fitsio.read(args.fofs)
+        loader.add_fofs(fofs)
 
     output = shredx.shred_fofs(
         loader=loader,
