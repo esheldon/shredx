@@ -36,6 +36,9 @@ def get_args():
 
 
 DEFAULT_CONFIG = {
+    'fofs': {
+        'min_fofsize': 2,
+    },
     'data': {
         'zero_weight_badpix': 0,
     },
@@ -55,6 +58,9 @@ def read_config(args):
         with open(args.config) as fobj:
             conf = yaml.load(fobj, Loader=yaml.Loader)
 
+        if 'fofs' not in conf:
+            conf['fofs'] = DEFAULT_CONFIG['fofs']
+
         if 'shredding' not in conf:
             conf['shredding'] = DEFAULT_CONFIG['shredding']
 
@@ -64,6 +70,7 @@ def read_config(args):
         if 'data' not in conf:
             conf['data'] = DEFAULT_CONFIG['data']
 
+        assert 'min_fofsize' in conf['fofs']
         assert 'psf_ngauss' in conf['shredding']
         assert 'model' in conf['guess']
         assert 'zero_weight_badpix' in conf['data']
@@ -92,6 +99,9 @@ def makedirs(args):
     make the output directory
     """
     dirname = os.path.dirname(args.outfile)
+    if dirname == '':
+        return
+
     if not os.path.exists(dirname):
         os.makedirs(dirname, exist_ok=True)
 
@@ -173,8 +183,9 @@ def main():
 
     output = shredx.shred_fofs(
         loader=loader,
+        min_fofsize=config['fofs']['min_fofsize'],
         shredconf=config['shredding'],
-        model=config['guess']['model'],
+        guess_model=config['guess']['model'],
         fof_range=fof_range,
         show=args.show,
         showonly=args.showonly,
