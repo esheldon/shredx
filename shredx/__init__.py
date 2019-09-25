@@ -15,3 +15,6 @@ from . import detect
 from .detect import run_sep, run_sep_on_mbobs
 
 from . import vis
+
+from . import config
+from .config import get_config
