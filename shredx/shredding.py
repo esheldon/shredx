@@ -1,5 +1,6 @@
 """
 TODO
+    - record versions of packages used
     - record error messages
     - use loader rng if none is sent?
 """
@@ -22,10 +23,13 @@ def shred_fofs(*,
                rng=None,
                get_shredders=False,
                fof_range=None,
+               # plotting
                show=False,
                showonly=False,
                show_full=False,
-               **kw):
+               width=1000,
+               scale=2,
+               title=None):
     """
     Parameters
     ----------
@@ -56,7 +60,6 @@ def shred_fofs(*,
         If True, just show images don't do fits
     show_full: bool
         If True, show some plots for the full image
-    **kw: extra plotting keywords
 
     Returns
     -------
@@ -73,7 +76,7 @@ def shred_fofs(*,
         loader.find_fofs()
 
     if show_full:
-        loader.view(show=True, rng=rng, **kw)
+        loader.view(show=True, rng=rng, width=width, scale=scale)
 
     cat = loader.cat
 
@@ -109,7 +112,6 @@ def shred_fofs(*,
                     guess_model=guess_model,
                     get_shredder=get_shredders,
                     skip_fit=True,
-                    **kw
                 )
             else:
 
@@ -126,20 +128,28 @@ def shred_fofs(*,
                 assert fof_cat.size == ind.size
 
                 if showonly:
-                    shredder.vis.view_mbobs(fof_mbobs, show=True, **kw)
+                    shredder.vis.view_mbobs(
+                        fof_mbobs,
+                        show=True,
+                        width=width,
+                        scale=scale,
+                        title=title,
+                    )
                     res = np.zeros([])
                 else:
 
-                    kw['seg'] = fof_seg
                     res = shred(
                         obs=fof_mbobs,
                         shredconf=shredconf,
                         cat=fof_cat,
                         guess_model=guess_model,
                         rng=rng,
-                        show=show,
                         get_shredder=get_shredders,
-                        **kw
+                        show=show,
+                        width=width,
+                        scale=scale,
+                        title=title,
+                        seg=fof_seg,
                     )
 
                 if show or showonly:
@@ -175,10 +185,14 @@ def shred(*,
           shredconf,
           guess_model='dev',
           rng=None,
-          show=False,
           get_shredder=False,
           skip_fit=False,
-          **kw):
+          # plotting
+          show=False,
+          width=1000,
+          scale=2,
+          seg=None,  # for plotting
+          title=None):
     """
     deblend objects in the input images
 
@@ -240,7 +254,13 @@ def shred(*,
 
         if show:
             if res['flags'] == 0:
-                s.plot_comparison(show=True, **kw)
+                s.plot_comparison(
+                    show=True,
+                    width=width,
+                    title=title,
+                    scale=scale,
+                    seg=seg,
+                )
             else:
                 shredder.vis.view_mbobs(s.mbobs)
 
@@ -303,7 +323,8 @@ def _make_output(*, cat, psf_ngauss, res, nband, ngauss_per, time):
     if 'coadd_result' in res:
         cres = res['coadd_result']
         for n in resfields:
-            output['coadd_%s' % n] = cres[n]
+            if n in cres:
+                output['coadd_%s' % n] = cres[n]
 
         pgmix = res['coadd_psf_gmix']
         ppars = pgmix.get_full_pars()
@@ -326,7 +347,8 @@ def _make_output(*, cat, psf_ngauss, res, nband, ngauss_per, time):
             for band in range(nband):
                 bres = res['band_results'][band]
                 for n in resfields:
-                    output['band_%s' % n][:, band] = bres[n]
+                    if n in bres:
+                        output['band_%s' % n][:, band] = bres[n]
 
                 pgmix = res['band_psf_gmix'][band]
                 bppars = pgmix.get_full_pars()
