@@ -50,6 +50,6 @@ def get_config(*, config_file=None):
         assert 'model' in conf['guess']
         assert 'zero_weight_badpix' in conf['data']
 
-        logger.info('final config: %s' % pformat(conf))
+        logger.info('final config: \n%s' % pformat(conf))
 
     return conf
