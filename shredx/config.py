@@ -1,5 +1,9 @@
+from pprint import pformat
+import logging
 from copy import deepcopy
 import yaml
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_CONFIG = {
     'fofs': {
@@ -25,6 +29,7 @@ def get_config(*, config_file=None):
     if config_file is None:
         conf = deepcopy(DEFAULT_CONFIG)
     else:
+        logger.info('reading config: %s' % config_file)
         with open(config_file) as fobj:
             conf = yaml.load(fobj, Loader=yaml.Loader)
 
@@ -44,5 +49,7 @@ def get_config(*, config_file=None):
         assert 'psf_ngauss' in conf['shredding']
         assert 'model' in conf['guess']
         assert 'zero_weight_badpix' in conf['data']
+
+        logger.info('final config: %s' % pformat(conf))
 
     return conf
