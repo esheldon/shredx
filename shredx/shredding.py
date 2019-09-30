@@ -310,7 +310,7 @@ def _make_output(*, cat, psf_ngauss, res, nband, ngauss_per, time):
     output['number'] = cat['number']
     output['time'] = time
 
-    _add_extra(output, cat)
+    output = _add_extra(output, cat)
 
     if 'fof_id' in cat.dtype.names:
         output['fof_id'] = cat['fof_id']
@@ -385,7 +385,41 @@ def _add_extra(output, cat):
         output['dec'] = cat['deltawin_j2000']
 
     if 'id' in names:
-        output['id'] = cat['id']
+        output = add_ids(output, cat['id'])
+
+    return output
+
+
+def add_ids(cat, ids):
+    """
+    add id information to the output
+
+    may generate a new catalog if 'id' is not present
+    """
+
+    logger.info('adding ids')
+
+    mids, mcat = match_ids(cat, ids)
+
+    if 'id' not in cat.dtype.names:
+        add_dt = [('id', 'i8')]
+        cat = eu.numpy_util.add_fields(cat, add_dt)
+
+    cat['id'][mcat] = ids['id'][mids]
+
+    return cat
+
+
+def match_ids(cat, ids):
+    """
+    match the catalog to the ids catalog
+    """
+    mids, mcat = eu.numpy_util.match(ids['number'], cat['number'])
+
+    if mcat.size != cat.size:
+        raise ValueError('not all numbers matched to id catalog')
+
+    return mids, mcat
 
 
 def _make_output_struct(*,
@@ -399,7 +433,6 @@ def _make_output_struct(*,
     from shredder import procflags
 
     dt = [
-        ('id', 'i8'),
         ('number', 'i4'),
         ('ra', 'f8'),
         ('dec', 'f8'),
