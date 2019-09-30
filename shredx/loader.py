@@ -23,6 +23,7 @@ class Loader(object):
                  pixbuf=10,
                  coord_offset=1,
                  zero_weight_badpix=None,
+                 rescale=True,
                  rng=None):
         """
         Parameters
@@ -51,6 +52,8 @@ class Loader(object):
             is zero
         zero_weight_badpix: int, optional
             Zero the weight map where these pixels are set in the bitmask
+        rescale: bool
+            Scale the fluxes by pixel scale squared
         rng: np.random.RandomState
             Random number generator
         """
@@ -62,6 +65,7 @@ class Loader(object):
         # with zero weight using the model
 
         self._ignore_zero_weight = False
+        self._rescale = rescale
 
         self._image_ext = image_ext
         self._weight_ext = weight_ext
@@ -298,6 +302,11 @@ class Loader(object):
             psf_obs = self._get_psf_obs(band, midrow, midcol)
 
             _replace_with_noise(image, weight, wout, self.rng)
+
+            if self._rescale:
+                scale = jacob.scale
+                image *= 1.0/scale**2
+                weight *= scale**4
 
             # zero the weight map for bad pixels.  Note we are doing this after
             # replacing non-member objects pixels with noise, in case the

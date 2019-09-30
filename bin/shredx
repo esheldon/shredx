@@ -5,7 +5,6 @@ import numpy as np
 import shredx
 import fitsio
 import argparse
-import esutil as eu
 
 logger = logging.getLogger(__name__)
 
@@ -67,18 +66,6 @@ def makedirs(args):
         os.makedirs(dirname, exist_ok=True)
 
 
-def match_ids(cat, ids):
-    """
-    match the catalog to the ids catalog
-    """
-    mids, mcat = eu.numpy_util.match(ids['number'], cat['number'])
-
-    if mcat.size != cat.size:
-        raise ValueError('not all numbers matched to id catalog')
-
-    return mids, mcat
-
-
 def read_ids(args):
     """
     add id information to the output
@@ -95,25 +82,12 @@ def read_ids(args):
         # and failing then
 
         cat = fitsio.read(args.cat, lower=True)
-        match_ids(cat, ids)
+        shredx.shredding.match_ids(cat, ids)
 
     else:
         ids = None
 
     return ids
-
-
-def add_ids(cat, ids):
-    """
-    add id information to the output
-    """
-
-    logger.info('adding ids')
-
-    mids, mcat = match_ids(cat, ids)
-    cat['id'][mcat] = ids['id'][mids]
-
-    return cat
 
 
 def main():
@@ -161,11 +135,16 @@ def main():
     )
 
     if ids is not None:
-        output = add_ids(output, ids)
+        output = shredx.shredding.add_ids(output, ids)
 
     if not args.showonly:
         logger.info('writing to: %s' % args.outfile)
-        fitsio.write(args.outfile, output, clobber=True)
+        fitsio.write(
+            args.outfile,
+            output,
+            extname='model_fits',
+            clobber=True,
+        )
 
 
 if __name__ == '__main__':
