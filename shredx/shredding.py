@@ -2,6 +2,8 @@
 TODO
     - record versions of packages used
     - record error messages
+    - make start/end inclusive to be consistent with fitvd, but also do keep
+    the start/num combo which is useful for testing
     - use loader rng if none is sent?
 """
 import time
@@ -116,7 +118,7 @@ def shred_fofs(*,
             else:
 
                 logger.info('-'*70)
-                logger.info('processing %d/%d' % (ii+1, nfofs))
+                logger.info('processing %d:%d' % (i, fof_range[1]))
 
                 fof_id = cat['fof_id'][ind[0]]
                 logger.info(
