@@ -54,8 +54,7 @@ def shred_fofs(*,
     get_shredders: bool
         If true return a list of shredders rather than a list of results
     fof_range: 2-element sequence, optional
-        Only process the requested range of fofs, formatted like a python slice
-        [start, end)
+        Only process the requested range of fofs [start, end]
     show: bool
         If True, show some plots for FoF groups
     showonly: bool
@@ -90,10 +89,10 @@ def shred_fofs(*,
     if fof_range is not None:
         assert len(fof_range) == 2
         assert fof_range[0] >= 0
-        assert fof_range[1] <= nfofs
-        nfofs = fof_range[1] - fof_range[0]
+        assert fof_range[1] < nfofs
+        nfofs = fof_range[1] - fof_range[0] + 1
     else:
-        fof_range = [0, nfofs]
+        fof_range = [0, nfofs-1]
 
     reslist = []
     shredder_list = []
