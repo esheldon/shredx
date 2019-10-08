@@ -90,7 +90,3 @@ shredx \
 
 ## TODO
 - implement saving plots rather than showing
-- implement saving information for groups not processed, e.g.
-  size 1
-- maybe implement converting results to array form for saving
-  to disk
