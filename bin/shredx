@@ -134,17 +134,17 @@ def main():
         width=1500,
     )
 
+    meta = shredx.get_meta()
+
     if ids is not None:
         output = shredx.shredding.add_ids(output, ids)
 
     if not args.showonly:
         logger.info('writing to: %s' % args.outfile)
-        fitsio.write(
-            args.outfile,
-            output,
-            extname='model_fits',
-            clobber=True,
-        )
+
+        with fitsio.FITS(args.outfile, 'rw', clobber=True) as fits:
+            fits.write(output, extname='model_fits')
+            fits.write(meta, extname='meta_data')
 
 
 if __name__ == '__main__':
