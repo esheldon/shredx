@@ -35,8 +35,6 @@ shredx.shred_fofs(
 
 Example using the script.  First generate fof groups using fofx
 ```bash
-export OMP_NUM_THREADS=1
-
 seg=seg/DES0109+0500_r4969p01_r_segmap.fits
 output=fofs/run11-DES0109+0500-fofs.fits
 
@@ -45,8 +43,6 @@ shredx-make-fofs --seg $seg --output $output
 
 Then run the shredder using shredx
 ```bash
-export OMP_NUM_THREADS=1
-
 config=run11.yaml
 seg=seg/DES0109+0500_r4969p01_r_segmap.fits
 cat=cat/DES0109+0500_r4969p01_r_cat.fits
