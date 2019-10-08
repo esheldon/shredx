@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def get_meta(self):
+def get_meta():
     import ngmix
     import shredder
     import fofx
