@@ -26,9 +26,11 @@ def get_args():
     parser.add_argument('--config', help='config file')
     parser.add_argument('--ids', help='file with ids to add to output')
 
-    parser.add_argument('--start', type=int, default=None)
+    parser.add_argument('--start', type=int, default=None,
+                        help='first FoF group to process')
+    parser.add_argument('--end', type=int, default=None,
+                        help='last FoF group to process, inclusive')
     parser.add_argument('--num', type=int, default=None)
-    parser.add_argument('--fof-range', help='interval [start, end)')
 
     parser.add_argument('--show', action='store_true')
     parser.add_argument('--showonly', action='store_true')
@@ -45,12 +47,16 @@ def get_fof_range(args):
     """
     fof_range = []
 
-    if args.fof_range is not None:
-        fof_range = [int(t) for t in args.fof_range.split(',')]
-    elif args.start is not None:
-        assert args.num is not None,\
-            'send --num with --start'
-        fof_range = [args.start, args.start+args.num]
+    if args.start is not None:
+        if args.end is not None:
+            fof_range = (args.start, args.end)
+        elif args.num is not None:
+            fof_range = (args.start, args.start + args.num - 1)
+        else:
+            raise ValueError('send both start and end')
+    else:
+        fof_range = None
+
     return fof_range
 
 
