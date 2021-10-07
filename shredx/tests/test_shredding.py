@@ -95,7 +95,7 @@ def test_shredding_bad_columns(seed, show=False, **kw):
     test with bad columns
     """
 
-    logger.info('seed: %d' % seed)
+    logger.info('seed: %d', seed)
     rng = np.random.RandomState(seed)
 
     conf = {'psf_ngauss': 2}
@@ -116,6 +116,8 @@ def test_shredding_bad_columns(seed, show=False, **kw):
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+
     seed0 = 88
     rng = np.random.RandomState(seed0)
     for i in range(100):
