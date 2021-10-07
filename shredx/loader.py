@@ -605,13 +605,11 @@ class Loader(object):
         """
         load the psfs
         """
-        import psfex
 
         self.psf_list = []
         for i, psf_file in enumerate(psf_files):
             if isinstance(psf_file, str):
-                logger.info('loading psfex file %s' % psf_file)
-                p = psfex.PSFEx(psf_file)
+                p = _load_psfex(psf_file)
             else:
                 if i == 0:
                     logger.info('got non-string psf input, assuming '
@@ -619,6 +617,13 @@ class Loader(object):
                 p = psf_file
 
             self.psf_list.append(p)
+
+
+def _load_psfex(fname):
+    import psfex
+
+    logger.info('loading psfex file %s' % fname)
+    return psfex.PSFEx(fname)
 
 
 def _replace_with_noise(image, weight, indices, rng):

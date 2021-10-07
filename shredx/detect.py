@@ -25,4 +25,7 @@ def run_sep_on_mbobs(mbobs):
     coadd_obs = shredder.coadding.make_coadd_obs(mbobs)
 
     noise = np.sqrt(1.0/coadd_obs.weight[0, 0])
-    return run_sep(coadd_obs.image, noise)
+    with coadd_obs.writeable():
+        result = run_sep(coadd_obs.image, noise)
+
+    return result
