@@ -30,7 +30,7 @@ def shred_fofs(*,
                showonly=False,
                show_full=False,
                width=1000,
-               scale=2,
+               scale=0.5,
                title=None):
     """
     Parameters
@@ -187,7 +187,7 @@ def shred(*,
           # plotting
           show=False,
           width=1000,
-          scale=2,
+          scale=0.5,
           seg=None,  # for plotting
           title=None):
     """

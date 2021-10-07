@@ -118,7 +118,7 @@ def test_shredding_bad_columns(seed, show=False, **kw):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
 
-    seed0 = 88
+    seed0 = 9212
     rng = np.random.RandomState(seed0)
     for i in range(100):
         seed = rng.randint(0, 2**31)
