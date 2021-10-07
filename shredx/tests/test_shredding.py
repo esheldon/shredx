@@ -14,7 +14,6 @@ def test_shredding_smoke(seed, show=False, **kw):
     test we can run the fof finder and extract the group
     """
 
-    shredx.setup_logging('debug')
     rng = np.random.RandomState(seed)
 
     conf = {'psf_ngauss': 2}
@@ -46,7 +45,6 @@ def test_shredding(show=False, **kw):
     # pick one we know does ok
     seed = 25
 
-    shredx.setup_logging('debug')
     rng = np.random.RandomState(seed)
 
     conf = {'psf_ngauss': 2}
@@ -97,8 +95,6 @@ def test_shredding_bad_columns(seed, show=False, **kw):
     test with bad columns
     """
 
-    shredx.setup_logging('debug')
-
     logger.info('seed: %d' % seed)
     rng = np.random.RandomState(seed)
 
@@ -120,6 +116,9 @@ def test_shredding_bad_columns(seed, show=False, **kw):
 
 
 if __name__ == '__main__':
-    seed = 995
-    test_shredding_smoke(seed, show=True)
-    # test_shredding_bad_columns(seed, show=True)
+    seed0 = 995
+    rng = np.random.RandomState(seed0)
+    for i in range(100):
+        seed = rng.randint(0, 2**31)
+        test_shredding_smoke(seed, show=True)
+        # test_shredding_bad_columns(seed, show=True)
