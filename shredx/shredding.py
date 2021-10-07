@@ -153,10 +153,6 @@ def shred_fofs(*,
                         seg=fof_seg,
                     )
 
-                if show or showonly:
-                    if input('hit a key (q to quit): ') == 'q':
-                        return
-
             if get_shredders:
                 output, s = res
                 shredder_list.append(s)
