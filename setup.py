@@ -6,7 +6,7 @@ scripts = [s for s in scripts if '~' not in s]
 
 setup(
     name='shredx',
-    version='v0.9.1',
+    version='v0.9.3',
     description=('Run the shredder image deblender on '
                  'images processed with sextractor'),
     license='GPL',
