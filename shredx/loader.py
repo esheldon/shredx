@@ -21,6 +21,7 @@ class Loader(object):
                  weight_ext='wgt',
                  mask_ext='msk',
                  pixbuf=10,
+                 min_box_size=25,
                  coord_offset=1,
                  zero_weight_badpix=None,
                  rescale=True,
@@ -46,6 +47,9 @@ class Loader(object):
         pixbuf: int
             Buffer to pad around each image extracted around
             a set of objects
+        min_box_size: int
+            Minimum size of boxes for observations.  Default None, meaning
+            the seg range plus pixbuf
         coord_offset: int
             sextractor position offsets, default 1 which is the sextractor
             convention.  Note if you used sep for object extraction, the offset
@@ -72,7 +76,12 @@ class Loader(object):
         self._mask_ext = mask_ext
 
         self.rng = rng
-        self._pixbuf = pixbuf
+        assert pixbuf >= 0
+        self.pixbuf = pixbuf
+
+        assert min_box_size >= 0
+        self.min_box_size = min_box_size
+
         self._coord_offset = coord_offset
         self._zero_weight_badpix = zero_weight_badpix
         image_files = _get_file_list(image_files)
@@ -444,12 +453,19 @@ class Loader(object):
         """
         seg = self.seg
         cat = self.cat
-        pixbuf = self._pixbuf
 
-        mincol = cat['xmin'][ind].min() - pixbuf
-        maxcol = cat['xmax'][ind].max() + pixbuf + 1
-        minrow = cat['ymin'][ind].min() - pixbuf
-        maxrow = cat['ymax'][ind].max() + pixbuf + 1
+        mincol, maxcol = get_padded_box_slice(
+            box_min=cat['xmin'][ind].min(),
+            box_max=cat['xmax'][ind].max(),
+            pixbuf=self.pixbuf,
+            min_box_size=self.min_box_size,
+        )
+        minrow, maxrow = get_padded_box_slice(
+            box_min=cat['ymin'][ind].min(),
+            box_max=cat['ymax'][ind].max(),
+            pixbuf=self.pixbuf,
+            min_box_size=self.min_box_size,
+        )
 
         if minrow < 0:
             minrow = 0
@@ -686,3 +702,29 @@ class Namer(object):
                 n = '%s%s' % (n, self.back)
 
         return n
+
+
+def get_padded_box_slice(box_min, box_max, pixbuf, min_box_size):
+    # add 1 for slice
+    box_min = box_min - pixbuf
+    box_max = box_max + pixbuf + 1
+
+    box_size = box_max - box_min
+
+    if box_size < min_box_size:
+        diff = min_box_size - box_size
+        half_diff = diff // 2
+        if half_diff == 0:
+            half_diff = 1
+
+        box_min -= half_diff
+        box_max += half_diff
+
+        while box_max - box_min < min_box_size:
+            box_min -= 1
+            box_max += 1
+
+        box_size = box_max - box_min
+        assert box_size >= min_box_size, f'{box_size} is not >= {min_box_size}'
+
+    return box_min, box_max
