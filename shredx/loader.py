@@ -24,6 +24,7 @@ class Loader(object):
                  min_box_size=25,
                  coord_offset=1,
                  zero_weight_badpix=None,
+                 replace_with_noise=True,
                  rescale=True,
                  rng=None):
         """
@@ -54,8 +55,10 @@ class Loader(object):
             sextractor position offsets, default 1 which is the sextractor
             convention.  Note if you used sep for object extraction, the offset
             is zero
-        zero_weight_badpix: int, optional
+        zero_weight_badpix: bool, optional
             Zero the weight map where these pixels are set in the bitmask
+        replace_with_noise: bool, optional
+            Replace neighbor pixels not in blend with noise
         rescale: bool
             Scale the fluxes by pixel scale squared
         rng: np.random.RandomState
@@ -68,8 +71,8 @@ class Loader(object):
         # we load all pixels into the observation, we will usually fill those
         # with zero weight using the model
 
-        self._ignore_zero_weight = False
-        self._rescale = rescale
+        self.ignore_zero_weight = False
+        self.rescale = rescale
 
         self._image_ext = image_ext
         self._weight_ext = weight_ext
@@ -82,8 +85,10 @@ class Loader(object):
         assert min_box_size >= 0
         self.min_box_size = min_box_size
 
-        self._coord_offset = coord_offset
-        self._zero_weight_badpix = zero_weight_badpix
+        self.coord_offset = coord_offset
+        self.zero_weight_badpix = zero_weight_badpix
+        self.replace_with_noise = replace_with_noise
+
         image_files = _get_file_list(image_files)
         psf_files = _get_file_list(psf_files)
         self.nband = len(image_files)
@@ -310,9 +315,10 @@ class Loader(object):
             jacob = self._get_jacobian(band, midrow, midcol)
             psf_obs = self._get_psf_obs(band, midrow, midcol)
 
-            _replace_with_noise(image, weight, wout, self.rng)
+            if self.replace_with_noise:
+                _replace_with_noise(image, weight, wout, self.rng)
 
-            if self._rescale:
+            if self.rescale:
                 scale = jacob.scale
                 image *= 1.0/scale**2
                 weight *= scale**4
@@ -321,9 +327,9 @@ class Loader(object):
             # replacing non-member objects pixels with noise, in case the
             # weight map ends up all zero
 
-            if self._zero_weight_badpix is not None:
+            if self.zero_weight_badpix is not None:
                 _zero_weight_map_for_badpix(
-                    mask, weight, self._zero_weight_badpix,
+                    mask, weight, self.zero_weight_badpix,
                 )
 
             obs = ngmix.Observation(
@@ -331,7 +337,7 @@ class Loader(object):
                 weight=weight,
                 jacobian=jacob,
                 psf=psf_obs,
-                ignore_zero_weight=self._ignore_zero_weight,
+                ignore_zero_weight=self.ignore_zero_weight,
             )
 
             obslist = ngmix.ObsList()
@@ -423,8 +429,8 @@ class Loader(object):
         wcs = self.wcs_list[band]
 
         jdata = wcs.get_jacobian(
-            x=midcol+self._coord_offset,
-            y=midrow+self._coord_offset,
+            x=midcol+self.coord_offset,
+            y=midrow+self.coord_offset,
         )
 
         jacob = ngmix.Jacobian(
@@ -577,9 +583,9 @@ class Loader(object):
                     raise ValueError('no x, x_image or xwin_image '
                                      'etc. fields found')
 
-        if self._coord_offset != 0:
+        if self.coord_offset != 0:
             for name in ['x', 'y', 'xmin', 'xmax', 'ymin', 'ymax']:
-                cat[name] -= self._coord_offset
+                cat[name] -= self.coord_offset
 
         self.ocat = ocat
         self.cat = cat
